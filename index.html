@@ -6,14 +6,15 @@
   <title>Daily Register</title>
   <style>
     :root {
-      --bg-color: #F8F5EE;
+      --bg-color: #F8FAFC;
       --card-bg: #FFFFFF;
-      --primary-accent: #A36B28;
-      --primary-hover: #86551E;
-      --text-dark: #2B332B;
-      --text-muted: #6B7280;
-      --border-color: #A36B28;
-      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --accent: #0F172A;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --border-color: #E2E8F0;
+      --shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
     }
 
     * {
@@ -25,7 +26,7 @@
 
     body {
       background-color: var(--bg-color);
-      color: var(--text-dark);
+      color: var(--text-main);
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -35,67 +36,81 @@
 
     .container {
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
     }
 
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 4px;
-      padding: 40px 32px;
+      border-radius: 12px;
+      padding: 36px 28px;
       box-shadow: var(--shadow);
     }
 
     .subtitle {
       font-size: 11px;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--primary-accent);
+      color: var(--primary);
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .title {
-      font-family: Georgia, serif;
-      font-size: 32px;
-      font-weight: bold;
-      color: var(--text-dark);
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent);
       margin-bottom: 24px;
     }
 
     .user-select-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 10px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 4px;
     }
 
     .user-btn {
-      background: #FAFAFA;
-      border: 1px solid #E5E7EB;
+      background: #F1F5F9;
+      border: 1px solid var(--border-color);
       padding: 14px;
-      border-radius: 4px;
-      font-size: 16px;
-      color: var(--text-dark);
+      border-radius: 8px;
+      font-size: 15px;
+      color: var(--text-main);
       cursor: pointer;
       text-align: left;
-      font-weight: 500;
-      transition: all 0.2s;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .user-btn:hover {
-      border-color: var(--primary-accent);
-      background: #FFF9F2;
+      border-color: var(--primary);
+      background: #EFF6FF;
+      color: var(--primary);
+    }
+
+    .user-badge-admin {
+      font-size: 10px;
+      background: #0F172A;
+      color: #FFF;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
     }
 
     .input-group {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .input-group label {
       display: block;
       font-size: 12px;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       font-weight: 700;
       color: var(--text-muted);
       margin-bottom: 8px;
@@ -104,38 +119,42 @@
 
     .selected-user-badge {
       display: inline-block;
-      background: #F3EFE6;
-      color: var(--primary-accent);
-      padding: 6px 12px;
-      border-radius: 4px;
+      background: #EFF6FF;
+      color: var(--primary);
+      padding: 8px 14px;
+      border-radius: 6px;
       font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 16px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      border: 1px solid #BFDBFE;
     }
 
-    input[type="password"], input[type="text"] {
+    input[type="password"] {
       width: 100%;
       padding: 14px;
-      font-size: 18px;
-      border: 1px solid #D1D5DB;
-      border-radius: 4px;
+      font-size: 20px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
       outline: none;
-      letter-spacing: 4px;
+      letter-spacing: 6px;
+      text-align: center;
+      background: #F8FAFC;
     }
 
-    input[type="password"]:focus, input[type="text"]:focus {
-      border-color: var(--primary-accent);
+    input[type="password"]:focus {
+      border-color: var(--primary);
+      background: #FFF;
     }
 
     .btn-primary {
       width: 100%;
-      background: var(--primary-accent);
+      background: var(--primary);
       color: white;
       border: none;
       padding: 14px;
-      font-size: 16px;
-      font-weight: 600;
-      border-radius: 4px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 8px;
       cursor: pointer;
       transition: background 0.2s;
     }
@@ -154,20 +173,22 @@
       font-size: 14px;
       margin-top: 16px;
       cursor: pointer;
+      font-weight: 600;
     }
 
     .btn-back:hover {
-      color: var(--text-dark);
+      color: var(--text-main);
     }
 
     .error-msg {
-      color: #DC2626;
+      color: #EF4444;
       font-size: 13px;
       margin-top: 8px;
       display: none;
+      text-align: center;
+      font-weight: 600;
     }
 
-    /* Screen Management */
     .screen {
       display: none;
     }
@@ -175,14 +196,15 @@
       display: block;
     }
 
-    /* Inactivity Modal */
+    /* Modal Overlay */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0,0,0,0.5);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
       display: none;
       justify-content: center;
       align-items: center;
@@ -195,23 +217,24 @@
 
     .modal-content {
       background: #fff;
-      padding: 30px;
-      border-radius: 6px;
-      max-width: 340px;
+      padding: 32px;
+      border-radius: 12px;
+      max-width: 360px;
       text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
 
     .modal-content h3 {
-      font-family: Georgia, serif;
       margin-bottom: 12px;
-      color: var(--text-dark);
+      color: var(--accent);
+      font-size: 20px;
     }
 
     .modal-content p {
       font-size: 14px;
       color: var(--text-muted);
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -219,43 +242,61 @@
 
 <div class="container">
 
-  <!-- STEP 1: USER SELECTION -->
+  <!-- SCREEN 1: USER SELECTION -->
   <div id="screen-users" class="card screen active">
     <div class="subtitle">CASH & CARD REGISTER</div>
-    <div class="title">Daily Register</div>
+    <div class="title">Select Account</div>
     <div class="input-group">
-      <label>Select User</label>
-      <div class="user-select-list">
-        <button class="user-btn" onclick="selectUser('User 1')">User 1</button>
-        <button class="user-btn" onclick="selectUser('User 2')">User 2</button>
-        <button class="user-btn" onclick="selectUser('Manager')">Manager</button>
+      <div class="user-select-list" id="user-buttons-container">
+        <!-- Generated Dynamically -->
       </div>
     </div>
   </div>
 
-  <!-- STEP 2: PIN ENTRY -->
-  <div id="screen-pin" class="card screen">
-    <div class="subtitle">CASH & CARD REGISTER</div>
-    <div class="title">Daily Register</div>
+  <!-- SCREEN 2: INITIAL SETUP (FIRST TIME LOG IN) -->
+  <div id="screen-setup-pin" class="card screen">
+    <div class="subtitle">FIRST TIME SETUP</div>
+    <div class="title">Create Your PIN</div>
+    <div class="selected-user-badge">User: <span class="display-user-name"></span></div>
    
-    <div class="selected-user-badge">User: <span id="display-user-name"></span></div>
-   
-    <form onsubmit="handleLogin(event)">
+    <form onsubmit="handlePinSetup(event)">
       <div class="input-group">
-        <label for="pin-input">PIN</label>
-        <input type="password" id="pin-input" maxlength="6" pattern="[0-9]*" inputmode="numeric" placeholder="••••" required autocomplete="off">
-        <div id="login-error" class="error-msg">Incorrect PIN. Please try again.</div>
+        <label for="new-pin-input">Enter New 4-Digit PIN</label>
+        <input type="password" id="new-pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
       </div>
-      <button type="submit" class="btn-primary">Enter</button>
+      <div class="input-group">
+        <label for="confirm-pin-input">Confirm 4-Digit PIN</label>
+        <input type="password" id="confirm-pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
+        <div id="setup-error" class="error-msg">PINs do not match. Try again.</div>
+      </div>
+      <button type="submit" class="btn-primary">Save PIN & Log In</button>
       <button type="button" class="btn-back" onclick="showUserSelection()">← Back</button>
     </form>
   </div>
 
-  <!-- STEP 3: DASHBOARD (MAIN REGISTER) -->
+  <!-- SCREEN 3: STANDARD LOGIN (ENTER PIN) -->
+  <div id="screen-pin" class="card screen">
+    <div class="subtitle">AUTHENTICATION</div>
+    <div class="title">Enter PIN</div>
+   
+    <div class="selected-user-badge">User: <span class="display-user-name"></span></div>
+   
+    <form onsubmit="handleLogin(event)">
+      <div class="input-group">
+        <label for="pin-input">4-Digit PIN</label>
+        <input type="password" id="pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
+        <div id="login-error" class="error-msg">Incorrect PIN. Please try again.</div>
+      </div>
+      <button type="submit" class="btn-primary">Enter Register</button>
+      <button type="button" class="btn-back" onclick="showUserSelection()">← Back</button>
+    </form>
+  </div>
+
+  <!-- SCREEN 4: DASHBOARD -->
   <div id="screen-dashboard" class="card screen">
-    <div class="subtitle">WELCOME</div>
+    <div class="subtitle">SYSTEM ACTIVE</div>
     <div class="title" id="welcome-title">Daily Register</div>
-    <p style="margin-bottom: 24px; color: var(--text-muted);">You are securely logged into the register.</p>
+    <p style="margin-bottom: 24px; color: var(--text-muted); font-size: 14px;">Logged in securely. Active session is protected by automatic timeout.</p>
 
     <button type="button" class="btn-primary" onclick="logout()">Log Out</button>
   </div>
@@ -272,60 +313,108 @@
 </div>
 
 <script>
-  // Setup User Accounts & PINs (Change PINs as needed)
-  const users = {
-    'User 1': '1234',
-    'User 2': '5678',
-    'Manager': '9999'
-  };
+  // User Accounts List
+  const userList = [
+    { name: 'Ali Hussein', role: 'user' },
+    { name: 'Fatima Hussein', role: 'user' },
+    { name: 'Dani Ossais', role: 'user' },
+    { name: 'Shirley Navarro', role: 'user' },
+    { name: 'Test 1', role: 'user' },
+    { name: 'Test 2', role: 'user' },
+    { name: 'Inaam Ossais', role: 'admin' }
+  ];
 
+  // Store user PINs (loads from browser memory if saved)
+  let userPins = JSON.parse(localStorage.getItem('registered_user_pins')) || {};
   let selectedUser = null;
+
   let inactivityTimer = null;
   let countdownTimer = null;
-  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes in milliseconds
-  const WARNING_LIMIT = 30; // 30 seconds warning countdown
+  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+  const WARNING_LIMIT = 30; // 30 seconds
+
+  // Build user list buttons on page load
+  function initUserList() {
+    const container = document.getElementById('user-buttons-container');
+    container.innerHTML = '';
+    userList.forEach(u => {
+      const btn = document.createElement('button');
+      btn.className = 'user-btn';
+      btn.onclick = () => selectUser(u.name);
+     
+      let badge = u.role === 'admin' ? '<span class="user-badge-admin">Admin</span>' : '';
+      btn.innerHTML = `<span>${u.name}</span> ${badge}`;
+      container.appendChild(btn);
+    });
+  }
 
   function selectUser(userName) {
     selectedUser = userName;
-    document.getElementById('display-user-name').textContent = userName;
-    clearPinInput();
-    switchScreen('screen-pin');
-    document.getElementById('pin-input').focus();
+    document.querySelectorAll('.display-user-name').forEach(el => el.textContent = userName);
+    clearInputs();
+
+    // Check if user has set a PIN yet
+    if (!userPins[selectedUser]) {
+      switchScreen('screen-setup-pin');
+      document.getElementById('new-pin-input').focus();
+    } else {
+      switchScreen('screen-pin');
+      document.getElementById('pin-input').focus();
+    }
   }
 
-  function showUserSelection() {
-    selectedUser = null;
-    clearPinInput();
-    switchScreen('screen-users');
-  }
+  function handlePinSetup(event) {
+    event.preventDefault();
+    const pin = document.getElementById('new-pin-input').value;
+    const confirm = document.getElementById('confirm-pin-input').value;
 
-  function clearPinInput() {
-    const pinInput = document.getElementById('pin-input');
-    pinInput.value = '';
-    document.getElementById('login-error').style.display = 'none';
+    if (pin.length === 4 && pin === confirm) {
+      userPins[selectedUser] = pin;
+      localStorage.setItem('registered_user_pins', JSON.stringify(userPins));
+      clearInputs();
+      loginSuccess();
+    } else {
+      document.getElementById('setup-error').style.display = 'block';
+    }
   }
 
   function handleLogin(event) {
     event.preventDefault();
     const enteredPin = document.getElementById('pin-input').value;
 
-    if (selectedUser && users[selectedUser] === enteredPin) {
-      // Login successful
-      document.getElementById('welcome-title').textContent = `Hello, ${selectedUser}`;
-      clearPinInput();
-      switchScreen('screen-dashboard');
-      startInactivityTracker();
+    if (selectedUser && userPins[selectedUser] === enteredPin) {
+      loginSuccess();
     } else {
-      // Login failed
       document.getElementById('login-error').style.display = 'block';
       document.getElementById('pin-input').value = '';
       document.getElementById('pin-input').focus();
     }
   }
 
+  function loginSuccess() {
+    document.getElementById('welcome-title').textContent = selectedUser;
+    clearInputs();
+    switchScreen('screen-dashboard');
+    startInactivityTracker();
+  }
+
+  function showUserSelection() {
+    selectedUser = null;
+    clearInputs();
+    switchScreen('screen-users');
+  }
+
+  function clearInputs() {
+    document.getElementById('pin-input').value = '';
+    document.getElementById('new-pin-input').value = '';
+    document.getElementById('confirm-pin-input').value = '';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('setup-error').style.display = 'none';
+  }
+
   function logout() {
     stopInactivityTracker();
-    clearPinInput();
+    clearInputs();
     selectedUser = null;
     hideModal();
     switchScreen('screen-users');
@@ -336,11 +425,10 @@
     document.getElementById(screenId).classList.add('active');
   }
 
-  // --- AUTOMATED 5-MINUTE TIMEOUT & POPUP LOGIC ---
+  // --- INACTIVITY & TIMEOUT MANAGEMENT ---
 
   function startInactivityTracker() {
     stopInactivityTracker();
-    // Listen to all common activity events
     ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
       window.addEventListener(evt, resetInactivityTimer);
     });
@@ -360,7 +448,6 @@
     clearTimeout(inactivityTimer);
     clearInterval(countdownTimer);
 
-    // Only set timer if user is logged into dashboard
     if (document.getElementById('screen-dashboard').classList.contains('active')) {
       inactivityTimer = setTimeout(showInactivityWarning, INACTIVITY_LIMIT);
     }
@@ -384,8 +471,10 @@
   function hideModal() {
     document.getElementById('timeout-modal').classList.remove('active');
   }
+
+  // Initialize
+  initUserList();
 </script>
 
 </body>
 </html>
-
