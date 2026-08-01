@@ -1,662 +1,391 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Register</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Register</title>
+  <style>
+    :root {
+      --bg-color: #F8F5EE;
+      --card-bg: #FFFFFF;
+      --primary-accent: #A36B28;
+      --primary-hover: #86551E;
+      --text-dark: #2B332B;
+      --text-muted: #6B7280;
+      --border-color: #A36B28;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    }
 
-  :root{
-    --ink:#1c2b2a;
-    --paper:#f6f2e9;
-    --panel:#ffffff;
-    --brass:#a9762f;
-    --brass-dark:#7d5620;
-    --forest:#2f4a3c;
-    --forest-dark:#1f332a;
-    --line:#1c2b2a;
-    --red:#e53935;
-    --muted:#7a7266;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'Inter',sans-serif;
-    min-height:100vh;
-  }
- 
-  /* Gate Screen */
-  .gate{
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-  }
-  .gate-card{
-    width:100%;
-    max-width:380px;
-    background:var(--panel);
-    border:1px solid var(--brass);
-    border-radius:4px;
-    padding:36px 32px;
-    box-shadow:0 2px 0 var(--brass);
-  }
-  .gate-card .eyebrow{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--brass-dark);
-    margin-bottom:6px;
-  }
-  .gate-card h1{
-    font-family:'Fraunces',serif;
-    font-size:28px;
-    font-weight:600;
-    margin:0 0 26px;
-    color:var(--forest-dark);
-  }
-  label{
-    display:block;
-    font-size:12px;
-    font-weight:600;
-    color:var(--muted);
-    margin-bottom:6px;
-  }
-  select, input{
-    width:100%;
-    padding:11px 12px;
-    border:1px solid var(--brass);
-    border-radius:4px;
-    font-size:15px;
-    background:#fffdf9;
-    color:var(--ink);
-    font-family:'IBM Plex Mono',monospace;
-  }
-  select{ font-family:'Inter',sans-serif; }
-  button.go{
-    width:100%;
-    margin-top:20px;
-    padding:12px;
-    border:none;
-    border-radius:4px;
-    background:var(--brass);
-    color:#fff;
-    font-size:14px;
-    font-weight:700;
-    cursor:pointer;
-  }
-  button.go:hover{background:var(--brass-dark);}
-  .err{color:var(--red); font-size:13px; margin-top:12px; display:none;}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-  /* Top Bar */
-  .topbar{
-    background:var(--forest-dark);
-    color:#f6f2e9;
-    padding:16px 22px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:3px solid var(--brass);
-  }
-  .topbar .title{ font-family:'Fraunces',serif; font-size:19px; font-weight:600; }
-  .topbar .sub{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:#c8b98a; }
-  .topbar button{
-    background:transparent;
-    border:1px solid rgba(246,242,233,0.35);
-    color:#f6f2e9;
-    padding:7px 14px;
-    border-radius:4px;
-    font-size:12px;
-    cursor:pointer;
-  }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
 
-  .wrap{max-width:1180px; margin:0 auto; padding:28px 18px 60px;}
+    .container {
+      width: 100%;
+      max-width: 420px;
+    }
 
-  .panel{
-    background:var(--panel);
-    border:1px solid var(--brass);
-    border-radius:4px;
-    padding:26px 28px;
-  }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+    }
 
-  .field-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:16px 18px;
-  }
-  .field-grid .full{grid-column:1/-1;}
+    .subtitle {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--primary-accent);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
 
-  .computed-row{
-    display:flex;
-    gap:16px;
-    margin-top:22px;
-    padding-top:18px;
-    border-top:1px dashed var(--brass);
-  }
-  .computed{
-    flex:1;
-    background:#faf7f0;
-    border:1px solid var(--brass);
-    border-radius:4px;
-    padding:12px 14px;
-  }
-  .computed .lab{font-size:11px; color:var(--muted); font-weight:600;}
-  .computed .val{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; margin-top:2px;}
+    .title {
+      font-family: Georgia, serif;
+      font-size: 32px;
+      font-weight: bold;
+      color: var(--text-dark);
+      margin-bottom: 24px;
+    }
 
-  /* Excel Table Styling Fixed */
-  .table-scroll{
-    overflow-x:auto;
-    border:2px solid var(--line);
-    max-height:75vh;
-    background: #ffffff;
-  }
-  table{
-    border-collapse:collapse;
-    min-width:1400px;
-    width:100%;
-    font-size:12.5px;
-    font-family:'IBM Plex Mono',monospace;
-  }
-  th, td{
-    border:1px solid var(--line);
-    padding:8px 12px;
-    text-align:right;
-    white-space:nowrap;
-    min-width:100px;
-  }
- 
-  /* Spreadsheet Header Styling */
-  th.head-date { background: #e2efda; text-align:center; color:#000; font-weight:bold; min-width:110px; }
-  th.head-staff { background: #e2efda; text-align:center; color:#000; font-weight:bold; min-width:130px; }
-  th.head-notes { background: #e2efda; text-align:center; color:#000; font-weight:bold; min-width:140px; }
-  th.head-cash { background: #a9d08e; text-align:center; color:#000; font-weight:bold; font-size:16px; }
-  th.head-subcash { background: #ffff00; text-align:center; color:#000; font-weight:bold; min-width:125px; }
-  th.head-expenses { background: #7f7f7f; text-align:center; color:#fff; font-weight:bold; min-width:125px; }
-  th.head-cierres { background: #fce4d6; text-align:center; color:#000; font-weight:bold; font-size:15px; min-width:125px; }
-  th.head-diferencia { background: #ff0000; text-align:center; color:#000; font-weight:bold; font-size:15px; min-width:125px; }
-  th.head-mcb-top { background: #00b0f0; text-align:center; color:#000; font-weight:bold; }
-  th.head-vidanova-top { background: #4472c4; text-align:center; color:#000; font-weight:bold; }
-  th.head-bank-sub { background: #bcd4ec; text-align:center; color:#000; font-weight:bold; min-width:120px; }
-  th.head-vidanova-sub { background: #c9cfec; text-align:center; color:#000; font-weight:bold; min-width:120px; }
+    .user-select-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
 
-  /* Data Row Styling */
-  tbody td:first-child{ text-align:center; font-weight:600; }
-  tbody td:nth-child(2), tbody td:nth-child(3){ text-align:left; font-family:'Inter',sans-serif; }
-  .prefix{ margin-right:6px; color:#333; font-weight:500; }
- 
-  /* Footer Totals */
-  tfoot td{
-    font-weight:bold;
-    background:#ffffff;
-    border-top:2px solid var(--line);
-  }
-  tfoot td.tot-yellow { background: #ffff00; }
-  tfoot td.tot-mcb { background: #00b0f0; }
-  tfoot td.tot-vidanova { background: #4472c4; }
+    .user-btn {
+      background: #FAFAFA;
+      border: 1px solid #E5E7EB;
+      padding: 14px;
+      border-radius: 4px;
+      font-size: 16px;
+      color: var(--text-dark);
+      cursor: pointer;
+      text-align: left;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
 
-  .toolbar{ display:flex; gap:10px; margin-bottom:16px; }
-  .toolbar button{ background:#fff; border:1px solid var(--line); padding:8px 13px; font-weight:600; cursor:pointer; }
-</style>
+    .user-btn:hover {
+      border-color: var(--primary-accent);
+      background: #FFF9F2;
+    }
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .selected-user-badge {
+      display: inline-block;
+      background: #F3EFE6;
+      color: var(--primary-accent);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      border: 1px solid #D1D5DB;
+      border-radius: 4px;
+      outline: none;
+      letter-spacing: 4px;
+    }
+
+    input[type="password"]:focus, input[type="text"]:focus {
+      border-color: var(--primary-accent);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--primary-accent);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-back {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+
+    .btn-back:hover {
+      color: var(--text-dark);
+    }
+
+    .error-msg {
+      color: #DC2626;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* Screen Management */
+    .screen {
+      display: none;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    /* Inactivity Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 6px;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal-content h3 {
+      font-family: Georgia, serif;
+      margin-bottom: 12px;
+      color: var(--text-dark);
+    }
+
+    .modal-content p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
 
-<!-- GATE -->
-<div class="gate" id="gate">
-  <div class="gate-card">
-    <div class="eyebrow">Cash &amp; Card Register</div>
-    <h1>Daily Register</h1>
+<div class="container">
 
-    <div id="stageName">
-      <label for="userSelect">Name</label>
-      <select id="userSelect"></select>
-      <button class="go" onclick="continueFromName()">Continue</button>
+  <!-- STEP 1: USER SELECTION -->
+  <div id="screen-users" class="card screen active">
+    <div class="subtitle">CASH & CARD REGISTER</div>
+    <div class="title">Daily Register</div>
+    <div class="input-group">
+      <label>Select User</label>
+      <div class="user-select-list">
+        <button class="user-btn" onclick="selectUser('User 1')">User 1</button>
+        <button class="user-btn" onclick="selectUser('User 2')">User 2</button>
+        <button class="user-btn" onclick="selectUser('Manager')">Manager</button>
+      </div>
     </div>
-
-    <div id="stageNewPin" style="display:none;">
-      <label for="newPin">New 4-digit PIN</label>
-      <input type="password" id="newPin" maxlength="4">
-      <label for="newPinConfirm" style="margin-top:10px;">Confirm PIN</label>
-      <input type="password" id="newPinConfirm" maxlength="4">
-      <button class="go" onclick="setNewPin()">Set PIN &amp; Continue</button>
-      <div class="err" id="newPinErr">PINs must match and be 4 digits.</div>
-    </div>
-
-    <div id="stageExistingPin" style="display:none;">
-      <label for="pin">PIN</label>
-      <input type="password" id="pin" maxlength="4">
-      <button class="go" onclick="attemptEnter()">Enter</button>
-      <div class="err" id="gateErr">Incorrect PIN.</div>
-    </div>
-
-    <button id="backBtn" style="display:none; width:100%; margin-top:12px; background:transparent; border:none; color:var(--muted); cursor:pointer;" onclick="backToName()">&larr; Back</button>
   </div>
+
+  <!-- STEP 2: PIN ENTRY -->
+  <div id="screen-pin" class="card screen">
+    <div class="subtitle">CASH & CARD REGISTER</div>
+    <div class="title">Daily Register</div>
+   
+    <div class="selected-user-badge">User: <span id="display-user-name"></span></div>
+   
+    <form onsubmit="handleLogin(event)">
+      <div class="input-group">
+        <label for="pin-input">PIN</label>
+        <input type="password" id="pin-input" maxlength="6" pattern="[0-9]*" inputmode="numeric" placeholder="••••" required autocomplete="off">
+        <div id="login-error" class="error-msg">Incorrect PIN. Please try again.</div>
+      </div>
+      <button type="submit" class="btn-primary">Enter</button>
+      <button type="button" class="btn-back" onclick="showUserSelection()">← Back</button>
+    </form>
+  </div>
+
+  <!-- STEP 3: DASHBOARD (MAIN REGISTER) -->
+  <div id="screen-dashboard" class="card screen">
+    <div class="subtitle">WELCOME</div>
+    <div class="title" id="welcome-title">Daily Register</div>
+    <p style="margin-bottom: 24px; color: var(--text-muted);">You are securely logged into the register.</p>
+
+    <button type="button" class="btn-primary" onclick="logout()">Log Out</button>
+  </div>
+
 </div>
 
-<!-- STAFF VIEW -->
-<div id="staffView" style="display:none;">
-  <div class="topbar">
-    <div>
-      <div class="title" id="staffNameLabel">Today's Entry</div>
-      <div class="sub" id="staffDateLabel"></div>
-    </div>
-    <button onclick="lockApp()">Lock</button>
-  </div>
-  <div class="wrap">
-    <div class="panel">
-      <div class="field-grid">
-        <div>
-          <label for="cashFlorin">Cash Florin (XCG)</label>
-          <input type="number" step="0.01" id="cashFlorin" placeholder="0.00">
-        </div>
-        <div>
-          <label for="cashUSD">Cash USD ($)</label>
-          <input type="number" step="0.01" id="cashUSD" placeholder="0.00">
-        </div>
-        <div>
-          <label for="expenses">Expenses (XCG)</label>
-          <input type="number" step="0.01" id="expenses" placeholder="0.00">
-        </div>
-        <div>
-          <label for="cierres">Cierres (XCG)</label>
-          <input type="number" step="0.01" id="cierres" placeholder="0.00">
-        </div>
-        <div>
-          <label for="mcb1">MCB Online — Entry 1 (XCG)</label>
-          <input type="number" step="0.01" id="mcb1" placeholder="0.00">
-        </div>
-        <div>
-          <label for="mcb2">MCB Online — Entry 2 (XCG)</label>
-          <input type="number" step="0.01" id="mcb2" placeholder="0.00">
-        </div>
-        <div>
-          <label for="vidaNova1">Vida Nova Online — Entry 1 (XCG)</label>
-          <input type="number" step="0.01" id="vidaNova1" placeholder="0.00">
-        </div>
-        <div>
-          <label for="vidaNova2">Vida Nova Online — Entry 2 (XCG)</label>
-          <input type="number" step="0.01" id="vidaNova2" placeholder="0.00">
-        </div>
-        <div class="full">
-          <label for="notes">Notes (optional)</label>
-          <input type="text" id="notes" placeholder="Notes">
-        </div>
-      </div>
-
-      <div class="computed-row">
-        <div class="computed">
-          <div class="lab">TOTAL (XCG)</div>
-          <div class="val" id="liveTotal">XCG 0.00</div>
-        </div>
-        <div class="computed">
-          <div class="lab">DIFERENCIA (Total − Cierres)</div>
-          <div class="val" id="liveDiff">XCG 0.00</div>
-        </div>
-      </div>
-
-      <button class="go" id="saveBtn" style="margin-top:24px;" onclick="saveEntry()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<!-- ADMIN VIEW -->
-<div id="adminView" style="display:none;">
-  <div class="topbar">
-    <div>
-      <div class="title">Register — Ledger View</div>
-      <div class="sub">Admin View</div>
-    </div>
-    <button onclick="lockApp()">Lock</button>
-  </div>
-  <div class="wrap" style="max-width: 1500px;">
-    <div class="panel">
-      <div class="toolbar">
-        <button onclick="loadAllEntries()">Refresh</button>
-        <button onclick="exportCSV()">Export CSV</button>
-      </div>
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th rowspan="2" class="head-date">DATE</th>
-              <th rowspan="2" class="head-staff">Staff</th>
-              <th rowspan="2" class="head-notes">Notes</th>
-              <th colspan="4" class="head-cash">Cash</th>
-              <th rowspan="2" class="head-cierres">Cierres</th>
-              <th rowspan="2" class="head-diferencia">Diferencia</th>
-              <th colspan="3" class="head-mcb-top">MCB — ONLINE</th>
-              <th colspan="3" class="head-vidanova-top">Vida Nova — ONLINE</th>
-            </tr>
-            <tr>
-              <th class="head-subcash">Cash Florin</th>
-              <th class="head-subcash">Cash USD</th>
-              <th class="head-expenses">Expenses</th>
-              <th class="head-subcash">Total</th>
-              <th class="head-bank-sub">Entry 1</th>
-              <th class="head-bank-sub">Entry 2</th>
-              <th class="head-bank-sub">Summary</th>
-              <th class="head-vidanova-sub">Entry 1</th>
-              <th class="head-vidanova-sub">Entry 2</th>
-              <th class="head-vidanova-sub">Summary</th>
-            </tr>
-          </thead>
-          <tbody id="adminBody"></tbody>
-          <tfoot id="adminFoot"></tfoot>
-        </table>
-      </div>
-    </div>
+<!-- TIMEOUT POPUP MODAL -->
+<div id="timeout-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h3>Session Timing Out</h3>
+    <p>You have been inactive. You will be automatically logged out in <span id="modal-timer">30</span> seconds.</p>
+    <button class="btn-primary" onclick="resetInactivityTimer()">Stay Logged In</button>
   </div>
 </div>
 
 <script>
-// Your specific Firebase configuration copied directly from your screen
-const firebaseConfig = {
-  apiKey: "AIzaSyCn8WQG8RSoSHX2aDzIw8MNKtIzJ5fXC8Y",
-  authDomain: "daily-register-database.firebaseapp.com",
-  projectId: "daily-register-database",
-  storageBucket: "daily-register-database.firebasestorage.app",
-  messagingSenderId: "909348257439",
-  appId: "1:909348257439:web:6206a2115116de13e2acaa"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const dbStore = firebase.firestore();
-
-// Cloud Database Handler
-const db = {
-  async get(key) {
-    try {
-      const doc = await dbStore.collection('appData').doc(key).get();
-      return doc.exists ? { value: JSON.stringify(doc.data().payload) } : null;
-    } catch(e) { return null; }
-  },
-  async set(key, value) {
-    await dbStore.collection('appData').doc(key).set({
-      payload: JSON.parse(value)
-    });
-    return true;
-  },
-  async list(prefix) {
-    const snapshot = await dbStore.collection('appData').get();
-    const keys = [];
-    snapshot.forEach(doc => {
-      if (doc.id.startsWith(prefix)) keys.push(doc.id);
-    });
-    return { keys };
-  }
-};
-
-const USERS = [
-  { name: "Ali Hussein", role: "staff" },
-  { name: "Shirley Navarro", role: "staff" },
-  { name: "Dani Ossais", role: "staff" },
-  { name: "Fatima Hussein", role: "staff" },
-  { name: "Inaam Ossais", role: "admin" }
-];
-const USD_RATE = 1.75;
-
-let currentUser = null;
-let pendingUser = null;
-let allEntriesCache = [];
-
-function populateUserSelect(){
-  document.getElementById('userSelect').innerHTML = USERS.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
-}
-populateUserSelect();
-
-function slug(name){ return name.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
-function roundToTwo(num) { return Math.round((Number(num) + Number.EPSILON) * 100) / 100; }
-
-function fmtVal(n) {
-  if (n === 0 || n === null || n === undefined || isNaN(n)) return '-';
-  return roundToTwo(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-}
-
-function todayStr(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-['cashFlorin','cashUSD','expenses','cierres'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', updateLiveComputed);
-});
-
-async function continueFromName(){
-  const name = document.getElementById('userSelect').value;
-  pendingUser = USERS.find(u => u.name === name);
-  document.getElementById('stageName').style.display = 'none';
-  document.getElementById('backBtn').style.display = 'block';
-
-  let pinRecord = null;
-  try{
-    const r = await db.get('pin:'+slug(name));
-    if(r && r.value) pinRecord = JSON.parse(r.value);
-  }catch(e){}
-
-  if(pinRecord && pinRecord.pin){
-    document.getElementById('stageExistingPin').style.display = 'block';
-  } else {
-    document.getElementById('stageNewPin').style.display = 'block';
-  }
-}
-
-function backToName(){
-  document.getElementById('stageName').style.display = 'block';
-  document.getElementById('stageNewPin').style.display = 'none';
-  document.getElementById('stageExistingPin').style.display = 'none';
-  document.getElementById('backBtn').style.display = 'none';
-}
-
-async function setNewPin(){
-  const p1 = document.getElementById('newPin').value;
-  const p2 = document.getElementById('newPinConfirm').value;
-  if(/^\d{4}$/.test(p1) && p1 === p2){
-    await db.set('pin:'+slug(pendingUser.name), JSON.stringify({pin: p1}));
-    currentUser = pendingUser;
-    proceedAfterLogin();
-  } else {
-    document.getElementById('newPinErr').style.display = 'block';
-  }
-}
-
-async function attemptEnter(){
-  const pin = document.getElementById('pin').value;
-  const r = await db.get('pin:'+slug(pendingUser.name));
-  const record = r && r.value ? JSON.parse(r.value) : null;
-  if(record && record.pin === pin){
-    currentUser = pendingUser;
-    proceedAfterLogin();
-  } else {
-    document.getElementById('gateErr').style.display = 'block';
-  }
-}
-
-function proceedAfterLogin(){
-  if(currentUser.role === 'admin') enterAdmin();
-  else enterStaff();
-}
-
-function lockApp(){
-  document.getElementById('staffView').style.display = 'none';
-  document.getElementById('adminView').style.display = 'none';
-  document.getElementById('gate').style.display = 'flex';
-  backToName();
-  currentUser = null;
-}
-
-function computeTotal(cashFlorin, cashUSD, expenses){
-  return roundToTwo((Number(cashFlorin)||0) + ((Number(cashUSD)||0) * USD_RATE) + (Number(expenses)||0));
-}
-
-function updateLiveComputed(){
-  const cF = document.getElementById('cashFlorin').value;
-  const cU = document.getElementById('cashUSD').value;
-  const exp = document.getElementById('expenses').value;
-  const cierres = document.getElementById('cierres').value;
-
-  const total = computeTotal(cF, cU, exp);
-  const diff = roundToTwo(total - (Number(cierres)||0));
-
-  document.getElementById('liveTotal').textContent = 'XCG ' + fmtVal(total);
-  document.getElementById('liveDiff').textContent = 'XCG ' + fmtVal(diff);
-}
-
-async function enterStaff(){
-  document.getElementById('gate').style.display = 'none';
-  document.getElementById('staffView').style.display = 'block';
-  document.getElementById('staffNameLabel').textContent = "Today's Entry — " + currentUser.name;
-  document.getElementById('staffDateLabel').textContent = new Date().toLocaleDateString(undefined,{weekday:'long', year:'numeric', month:'long', day:'numeric'});
-
-  ['cashFlorin','cashUSD','expenses','cierres','mcb1','mcb2','vidaNova1','vidaNova2','notes'].forEach(id=>{ document.getElementById(id).value = ''; });
-
-  try{
-    const result = await db.get('entry:' + todayStr() + ':' + slug(currentUser.name));
-    if(result && result.value){
-      const d = JSON.parse(result.value);
-      document.getElementById('cashFlorin').value = d.cashFlorin ?? '';
-      document.getElementById('cashUSD').value = d.cashUSD ?? '';
-      document.getElementById('expenses').value = d.expenses ?? '';
-      document.getElementById('cierres').value = d.cierres ?? '';
-      document.getElementById('mcb1').value = d.mcb1 ?? '';
-      document.getElementById('mcb2').value = d.mcb2 ?? '';
-      document.getElementById('vidaNova1').value = d.vidaNova1 ?? '';
-      document.getElementById('vidaNova2').value = d.vidaNova2 ?? '';
-      document.getElementById('notes').value = d.notes ?? '';
-    }
-  }catch(e){}
-  updateLiveComputed();
-}
-
-async function saveEntry(){
-  const cF = Number(document.getElementById('cashFlorin').value) || 0;
-  const cU = Number(document.getElementById('cashUSD').value) || 0;
-  const exp = Number(document.getElementById('expenses').value) || 0;
-  const cierres = Number(document.getElementById('cierres').value) || 0;
-  const mcb1 = Number(document.getElementById('mcb1').value) || 0;
-  const mcb2 = Number(document.getElementById('mcb2').value) || 0;
-  const vidaNova1 = Number(document.getElementById('vidaNova1').value) || 0;
-  const vidaNova2 = Number(document.getElementById('vidaNova2').value) || 0;
-  const mcbSummary = roundToTwo(mcb1 + mcb2);
-  const vidaNovaSummary = roundToTwo(vidaNova1 + vidaNova2);
-  const notes = document.getElementById('notes').value.trim();
-
-  const total = computeTotal(cF, cU, exp);
-  const diferencia = roundToTwo(total - cierres);
-
-  const payload = {
-    date: todayStr(), staffName: currentUser.name, cashFlorin: cF, cashUSD: cU, expenses: exp, cierres,
-    mcb1, mcb2, mcbSummary, vidaNova1, vidaNova2, vidaNovaSummary,
-    total, diferencia, notes, savedAt: new Date().toISOString()
+  // Setup User Accounts & PINs (Change PINs as needed)
+  const users = {
+    'User 1': '1234',
+    'User 2': '5678',
+    'Manager': '9999'
   };
 
-  await db.set('entry:' + todayStr() + ':' + slug(currentUser.name), JSON.stringify(payload));
-  alert('Entry Saved to Cloud!');
-}
+  let selectedUser = null;
+  let inactivityTimer = null;
+  let countdownTimer = null;
+  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const WARNING_LIMIT = 30; // 30 seconds warning countdown
 
-async function enterAdmin(){
-  document.getElementById('gate').style.display = 'none';
-  document.getElementById('adminView').style.display = 'block';
-  await loadAllEntries();
-}
-
-async function loadAllEntries(){
-  const body = document.getElementById('adminBody');
-  const foot = document.getElementById('adminFoot');
-  body.innerHTML = '<tr><td colspan="15">Loading entries from Cloud...</td></tr>';
-
-  try{
-    const listResult = await db.list('entry:');
-    const keys = (listResult && listResult.keys) ? listResult.keys : [];
-    const entries = [];
-
-    for(const key of keys){
-      const r = await db.get(key);
-      if(r && r.value) entries.push(JSON.parse(r.value));
-    }
-
-    entries.sort((a,b)=> a.date.localeCompare(b.date));
-    allEntriesCache = entries;
-
-    body.innerHTML = entries.map(e => `
-      <tr>
-        <td>${e.date}</td>
-        <td>${e.staffName || '—'}</td>
-        <td>${e.notes ? e.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.cashFlorin)}</td>
-        <td><span class="prefix">$</span>${fmtVal(e.cashUSD)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.expenses)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.total)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.cierres)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.diferencia)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.mcb1)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.mcb2)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.mcbSummary)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.vidaNova1)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.vidaNova2)}</td>
-        <td><span class="prefix">XCG</span>${fmtVal(e.vidaNovaSummary)}</td>
-      </tr>
-    `).join('');
-
-    const sum = (f) => roundToTwo(entries.reduce((acc, el)=> acc + (Number(el[f])||0), 0));
-
-    foot.innerHTML = `
-      <tr>
-        <td colspan="5"></td>
-        <td class="tot-yellow"><span class="prefix">FL.</span>${fmtVal(sum('expenses'))}</td>
-        <td class="tot-yellow"><span class="prefix">FL.</span>${fmtVal(sum('total'))}</td>
-        <td colspan="4"></td>
-        <td class="tot-mcb"><span class="prefix">FL.</span>${fmtVal(sum('mcbSummary'))}</td>
-        <td colspan="2"></td>
-        <td class="tot-vidanova"><span class="prefix">FL.</span>${fmtVal(sum('vidaNovaSummary'))}</td>
-      </tr>
-    `;
-  } catch(e){
-    body.innerHTML = '<tr><td colspan="15">Error loading cloud entries.</td></tr>';
+  function selectUser(userName) {
+    selectedUser = userName;
+    document.getElementById('display-user-name').textContent = userName;
+    clearPinInput();
+    switchScreen('screen-pin');
+    document.getElementById('pin-input').focus();
   }
-}
 
-function exportCSV(){
-  if(!allEntriesCache.length) return;
-  const headers = ['Date','Staff','Notes','Cash Florin','Cash USD','Expenses','Total','Cierres','Diferencia','MCB 1','MCB 2','MCB Summary','Vida Nova 1','Vida Nova 2','Vida Nova Summary'];
-  const lines = [headers.join(',')];
+  function showUserSelection() {
+    selectedUser = null;
+    clearPinInput();
+    switchScreen('screen-users');
+  }
 
-  allEntriesCache.forEach(e=>{
-    lines.push([
-      `"${e.date}"`,
-      `"${e.staffName || ''}"`,
-      `"${e.notes || ''}"`,
-      e.cashFlorin || 0,
-      e.cashUSD || 0,
-      e.expenses || 0,
-      e.total || 0,
-      e.cierres || 0,
-      e.diferencia || 0,
-      e.mcb1 || 0,
-      e.mcb2 || 0,
-      e.mcbSummary || 0,
-      e.vidaNova1 || 0,
-      e.vidaNova2 || 0,
-      e.vidaNovaSummary || 0
-    ].join(','));
-  });
+  function clearPinInput() {
+    const pinInput = document.getElementById('pin-input');
+    pinInput.value = '';
+    document.getElementById('login-error').style.display = 'none';
+  }
 
-  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `register-export-${todayStr()}.csv`;
-  a.click();
-}
+  function handleLogin(event) {
+    event.preventDefault();
+    const enteredPin = document.getElementById('pin-input').value;
+
+    if (selectedUser && users[selectedUser] === enteredPin) {
+      // Login successful
+      document.getElementById('welcome-title').textContent = `Hello, ${selectedUser}`;
+      clearPinInput();
+      switchScreen('screen-dashboard');
+      startInactivityTracker();
+    } else {
+      // Login failed
+      document.getElementById('login-error').style.display = 'block';
+      document.getElementById('pin-input').value = '';
+      document.getElementById('pin-input').focus();
+    }
+  }
+
+  function logout() {
+    stopInactivityTracker();
+    clearPinInput();
+    selectedUser = null;
+    hideModal();
+    switchScreen('screen-users');
+  }
+
+  function switchScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  // --- AUTOMATED 5-MINUTE TIMEOUT & POPUP LOGIC ---
+
+  function startInactivityTracker() {
+    stopInactivityTracker();
+    // Listen to all common activity events
+    ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, resetInactivityTimer);
+    });
+    resetInactivityTimer();
+  }
+
+  function stopInactivityTracker() {
+    clearTimeout(inactivityTimer);
+    clearInterval(countdownTimer);
+    ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
+      window.removeEventListener(evt, resetInactivityTimer);
+    });
+  }
+
+  function resetInactivityTimer() {
+    hideModal();
+    clearTimeout(inactivityTimer);
+    clearInterval(countdownTimer);
+
+    // Only set timer if user is logged into dashboard
+    if (document.getElementById('screen-dashboard').classList.contains('active')) {
+      inactivityTimer = setTimeout(showInactivityWarning, INACTIVITY_LIMIT);
+    }
+  }
+
+  function showInactivityWarning() {
+    let secondsLeft = WARNING_LIMIT;
+    document.getElementById('modal-timer').textContent = secondsLeft;
+    document.getElementById('timeout-modal').classList.add('active');
+
+    countdownTimer = setInterval(() => {
+      secondsLeft--;
+      document.getElementById('modal-timer').textContent = secondsLeft;
+      if (secondsLeft <= 0) {
+        clearInterval(countdownTimer);
+        logout();
+      }
+    }, 1000);
+  }
+
+  function hideModal() {
+    document.getElementById('timeout-modal').classList.remove('active');
+  }
 </script>
+
 </body>
 </html>
 
