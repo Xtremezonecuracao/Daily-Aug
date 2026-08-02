@@ -3,19 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Register</title>
+  <title>Xtremezone Curaçao - Daily Register</title>
   <style>
     :root {
       --bg-color: #0F172A; /* Dark charcoal background */
-      --card-bg: #1E293B; /* Slightly lighter container card */
+      --card-bg: #1E293B; /* Container card */
       --primary: #10B981; /* Emerald green primary */
       --primary-hover: #059669; /* Darker emerald hover */
-      --accent-text: #6EE7B7; /* Light emerald for headers */
-      --text-main: #F8FAFC; /* Crisp white main text */
-      --text-muted: #94A3B8; /* Muted gray subtext */
+      --accent-text: #6EE7B7; /* Light emerald */
+      --text-main: #F8FAFC; /* Crisp white */
+      --text-muted: #94A3B8; /* Muted gray */
       --border-color: #334155; /* Subtle border divider */
       --input-bg: #0F172A;
       --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+     
+      /* Neon Palette */
+      --neon-pink: #FF007F;
+      --neon-cyan: #00F0FF;
+      --neon-yellow: #FFE600;
     }
 
     * {
@@ -48,6 +53,53 @@
       box-shadow: var(--shadow);
     }
 
+    /* NEON LOGO STYLES */
+    .brand-logo-container {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 10px auto;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.5), 0 0 25px rgba(0, 240, 255, 0.3);
+    }
+
+    .logo-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: #FFF;
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+    }
+
+    .logo-title {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-yellow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+      line-height: 1.1;
+    }
+
+    .logo-subtitle {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--neon-pink);
+      text-transform: uppercase;
+      margin-top: 3px;
+      text-shadow: 0 0 8px rgba(255, 0, 127, 0.4);
+    }
+
     .subtitle {
       font-size: 11px;
       letter-spacing: 2px;
@@ -58,7 +110,7 @@
     }
 
     .title {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 800;
       color: var(--text-main);
       margin-bottom: 24px;
@@ -101,7 +153,8 @@
     }
 
     select.user-select:focus, select.user-select:hover {
-      border-color: var(--primary);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
     }
 
     .select-wrapper::after {
@@ -243,6 +296,18 @@
 
   <!-- SCREEN 1: USER DROPDOWN SELECTION -->
   <div id="screen-users" class="card screen active">
+   
+    <!-- VIBRANT NEON LOGO -->
+    <div class="brand-logo-container">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7a.996.996 0 1 0-1.41 1.41L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.88c.38-.38.38-1.02 0-1.41z"/>
+        </svg>
+      </div>
+      <div class="logo-title">Xtremezone</div>
+      <div class="logo-subtitle">Curaçao</div>
+    </div>
+
     <div class="subtitle">CASH & CARD REGISTER</div>
     <div class="title">Select Account</div>
    
