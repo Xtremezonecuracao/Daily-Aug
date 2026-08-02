@@ -3,19 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Xtremezone Curaçao - Daily Register</title>
+  <title>Xtremezone Curaçao - Daily Closing</title>
   <style>
     :root {
-      --bg-color: #0F172A; /* Dark charcoal background */
-      --card-bg: #1E293B; /* Container card */
-      --primary: #10B981; /* Emerald green primary */
-      --primary-hover: #059669; /* Darker emerald hover */
-      --accent-text: #6EE7B7; /* Light emerald */
-      --text-main: #F8FAFC; /* Crisp white */
-      --text-muted: #94A3B8; /* Muted gray */
-      --border-color: #334155; /* Subtle border divider */
+      --bg-color: #0F172A;
+      --card-bg: #1E293B;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --accent-text: #6EE7B7;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --border-color: #334155;
       --input-bg: #0F172A;
       --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+     
+      /* Spreadsheet Colors */
+      --cell-yellow: rgba(255, 230, 0, 0.15);
+      --cell-red: rgba(255, 77, 77, 0.15);
+      --cell-blue: rgba(0, 195, 255, 0.15);
+      --cell-gray: rgba(148, 163, 184, 0.1);
      
       /* Neon Palette */
       --neon-pink: #FF007F;
@@ -42,7 +48,12 @@
 
     .container {
       width: 100%;
-      max-width: 650px; /* Expanded for register table */
+      max-width: 600px;
+      transition: max-width 0.3s ease;
+    }
+   
+    .container.admin-mode {
+      max-width: 1100px; /* Expands for the wide admin table */
     }
 
     .card {
@@ -53,7 +64,7 @@
       box-shadow: var(--shadow);
     }
 
-    /* NEON LOGO STYLES */
+    /* BRAND LOGO STYLES */
     .brand-logo-container {
       text-align: center;
       margin-bottom: 28px;
@@ -97,7 +108,6 @@
       color: var(--neon-pink);
       text-transform: uppercase;
       margin-top: 3px;
-      text-shadow: 0 0 8px rgba(255, 0, 127, 0.4);
     }
 
     .subtitle {
@@ -137,24 +147,24 @@
       text-transform: uppercase;
     }
 
-    .form-grid {
+    .form-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
 
-    @media (max-width: 480px) {
-      .form-grid {
+    @media (max-width: 580px) {
+      .form-grid-2 {
         grid-template-columns: 1fr;
       }
     }
 
-    /* DROPDOWN & INPUT STYLES */
+    /* INPUTS & DROPDOWNS */
     .select-wrapper {
       position: relative;
     }
 
-    select.user-select, input[type="number"], input[type="text"] {
+    select.user-select, input[type="number"], input[type="text"], input[type="date"] {
       width: 100%;
       padding: 14px 16px;
       font-size: 15px;
@@ -169,12 +179,10 @@
 
     select.user-select {
       appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
       cursor: pointer;
     }
 
-    select.user-select:focus, select.user-select:hover, input:focus {
+    select.user-select:focus, input:focus {
       border-color: var(--neon-cyan);
       box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
     }
@@ -230,6 +238,7 @@
       border-radius: 10px;
       cursor: pointer;
       transition: all 0.2s ease;
+      margin-top: 10px;
     }
 
     .btn-primary:hover {
@@ -277,10 +286,22 @@
       text-align: center;
       font-weight: 600;
     }
+   
+    .success-msg {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: none;
+    }
 
-    /* REGISTER TABLE STYLES */
+    /* ADMIN SPREADSHEET TABLE DESIGN */
     .table-container {
-      margin-top: 24px;
+      margin-top: 20px;
       overflow-x: auto;
       border: 1px solid var(--border-color);
       border-radius: 10px;
@@ -289,31 +310,33 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      text-align: left;
-      font-size: 14px;
+      text-align: right;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
     }
 
     th {
       background-color: var(--input-bg);
-      color: var(--accent-text);
+      color: var(--text-main);
       font-weight: 700;
       text-transform: uppercase;
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 1px;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border-color);
+      text-align: center;
     }
 
-    td {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border-color);
-      color: var(--text-main);
-    }
+    .col-yellow { background-color: var(--cell-yellow); }
+    .col-gray { background-color: var(--cell-gray); }
+    .col-red { background-color: var(--cell-red); color: #FF6B6B; font-weight: bold; }
+    .col-blue { background-color: var(--cell-blue); }
 
-    tr:last-child td {
-      border-bottom: none;
-    }
-
+    .text-left { text-align: left; }
+   
     .empty-table-msg {
       text-align: center;
       color: var(--text-muted);
@@ -321,64 +344,17 @@
       font-style: italic;
     }
 
-    .screen {
-      display: none;
-    }
-    .screen.active {
-      display: block;
-    }
-
-    /* Modal Overlay */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(4px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-overlay.active {
-      display: flex;
-    }
-
-    .modal-content {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      padding: 32px;
-      border-radius: 14px;
-      max-width: 360px;
-      text-align: center;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-content h3 {
-      margin-bottom: 12px;
-      color: var(--text-main);
-      font-size: 20px;
-    }
-
-    .modal-content p {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
+    .screen { display: none; }
+    .screen.active { display: block; }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="main-container">
 
   <!-- SCREEN 1: USER DROPDOWN SELECTION -->
   <div id="screen-users" class="card screen active">
    
-    <!-- VIBRANT NEON LOGO -->
     <div class="brand-logo-container">
       <div class="logo-icon">
         <svg viewBox="0 0 24 24">
@@ -386,11 +362,11 @@
         </svg>
       </div>
       <div class="logo-title">Xtremezone</div>
-      <div class="logo-subtitle">Curaçao</div>
+      <div class="logo-subtitle">Daily Register</div>
     </div>
 
-    <div class="subtitle">CASH & CARD REGISTER</div>
-    <div class="title">Select Account</div>
+    <div class="subtitle">SELECT ACCOUNT</div>
+    <div class="title">Log In</div>
    
     <div class="input-group">
       <label for="user-dropdown">Select User</label>
@@ -403,13 +379,13 @@
           <option value="Shirley Navarro">Shirley Navarro</option>
           <option value="Test 1">Test 1</option>
           <option value="Test 2">Test 2</option>
-          <option value="Inaam Ossais">Inaam Ossais (Admin)</option>
+          <option value="Inaam Ossais (Admin)">Inaam Ossais (Admin)</option>
         </select>
       </div>
     </div>
   </div>
 
-  <!-- SCREEN 2: INITIAL SETUP (FIRST TIME LOG IN) -->
+  <!-- SCREEN 2: INITIAL PIN SETUP -->
   <div id="screen-setup-pin" class="card screen">
     <div class="subtitle">FIRST TIME SETUP</div>
     <div class="title">Create Your PIN</div>
@@ -418,126 +394,148 @@
     <form onsubmit="handlePinSetup(event)">
       <div class="input-group">
         <label for="new-pin-input">Enter New 4-Digit PIN</label>
-        <input type="password" id="new-pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
+        <input type="password" id="new-pin-input" maxlength="4" inputmode="numeric" placeholder="••••" required autocomplete="off">
       </div>
       <div class="input-group">
         <label for="confirm-pin-input">Confirm 4-Digit PIN</label>
-        <input type="password" id="confirm-pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
-        <div id="setup-error" class="error-msg">PINs do not match. Try again.</div>
+        <input type="password" id="confirm-pin-input" maxlength="4" inputmode="numeric" placeholder="••••" required autocomplete="off">
+        <div id="setup-error" class="error-msg">PINs do not match or must be 4 digits.</div>
       </div>
       <button type="submit" class="btn-primary">Save PIN & Log In</button>
       <button type="button" class="btn-back" onclick="showUserSelection()">← Back</button>
     </form>
   </div>
 
-  <!-- SCREEN 3: STANDARD LOGIN (ENTER PIN) -->
+  <!-- SCREEN 3: STANDARD LOGIN -->
   <div id="screen-pin" class="card screen">
     <div class="subtitle">AUTHENTICATION</div>
     <div class="title">Enter PIN</div>
-   
     <div class="selected-user-badge">User: <span class="display-user-name"></span></div>
    
     <form onsubmit="handleLogin(event)">
       <div class="input-group">
         <label for="pin-input">4-Digit PIN</label>
-        <input type="password" id="pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
+        <input type="password" id="pin-input" maxlength="4" inputmode="numeric" placeholder="••••" required autocomplete="off">
         <div id="login-error" class="error-msg">Incorrect PIN. Please try again.</div>
       </div>
-      <button type="submit" class="btn-primary">Enter Register</button>
+      <button type="submit" class="btn-primary">Log In</button>
       <button type="button" class="btn-back" onclick="showUserSelection()">← Back</button>
     </form>
   </div>
 
-  <!-- SCREEN 4: DASHBOARD & REGISTER ENTRY FORM -->
-  <div id="screen-dashboard" class="card screen">
+  <!-- SCREEN 4: USER DASHBOARD (INPUT FORM ONLY) -->
+  <div id="screen-user-dashboard" class="card screen">
     <div class="header-bar">
       <div>
-        <div class="subtitle">ACTIVE REGISTER SESSION</div>
-        <div class="title" id="welcome-title" style="margin-bottom:0;">Daily Register</div>
+        <div class="subtitle">END OF DAY REPORT</div>
+        <div class="title" id="user-welcome-title" style="margin-bottom:0;">Submit Data</div>
       </div>
       <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
     </div>
 
-    <!-- ENTRY FORM -->
-    <form onsubmit="handleRegisterSubmit(event)">
-      <div class="form-grid">
+    <div id="success-message" class="success-msg">Daily record submitted successfully!</div>
+
+    <form onsubmit="handleUserSubmit(event)">
+      <div class="input-group">
+        <label for="entry-date">Date</label>
+        <input type="date" id="entry-date" required>
+      </div>
+
+      <div class="form-grid-2">
         <div class="input-group">
-          <label for="entry-description">Description / Item</label>
-          <input type="text" id="entry-description" placeholder="e.g. Snack bar sales" required autocomplete="off">
+          <label for="entry-cash-florin">Cash Florin (ANG)</label>
+          <input type="number" id="entry-cash-florin" step="0.01" min="0" placeholder="0.00" required>
         </div>
         <div class="input-group">
-          <label for="entry-payment-type">Payment Method</label>
-          <div class="select-wrapper">
-            <select id="entry-payment-type" class="user-select" required>
-              <option value="Cash">Cash</option>
-              <option value="Card">Card</option>
-            </select>
-          </div>
+          <label for="entry-cash-usd">Cash USD ($)</label>
+          <input type="number" id="entry-cash-usd" step="0.01" min="0" placeholder="0.00" required>
         </div>
       </div>
 
-      <div class="form-grid">
+      <div class="form-grid-2">
         <div class="input-group">
-          <label for="entry-amount">Amount (ANG / USD)</label>
-          <input type="number" id="entry-amount" step="0.01" min="0.01" placeholder="0.00" required>
+          <label for="entry-expenses">Expenses (ANG)</label>
+          <input type="number" id="entry-expenses" step="0.01" min="0" placeholder="0.00" required>
         </div>
         <div class="input-group">
-          <label for="entry-notes">Notes (Optional)</label>
-          <input type="text" id="entry-notes" placeholder="Shift details..." autocomplete="off">
+          <label for="entry-cierres">Cierres (Actual Cash Counted)</label>
+          <input type="number" id="entry-cierres" step="0.01" min="0" placeholder="0.00" required>
         </div>
       </div>
 
-      <button type="submit" class="btn-primary" style="margin-top: 8px;">Add Register Entry</button>
+      <div class="form-grid-2">
+        <div class="input-group">
+          <label for="entry-mcb">MCB Online</label>
+          <input type="number" id="entry-mcb" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="input-group">
+          <label for="entry-vidanova">Vida Nova Online</label>
+          <input type="number" id="entry-vidanova" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Submit Daily Numbers</button>
     </form>
+  </div>
 
-    <!-- ENTRIES TABLE -->
-    <div style="margin-top: 32px;">
-      <div class="subtitle">TODAY'S RECORDED TRANSACTIONS</div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>User</th>
-              <th>Description</th>
-              <th>Type</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody id="register-table-body">
-            <!-- Dynamically Rendered -->
-          </tbody>
-        </table>
+  <!-- SCREEN 5: ADMIN DASHBOARD (FULL TABLE VIEW) -->
+  <div id="screen-admin-dashboard" class="card screen">
+    <div class="header-bar">
+      <div>
+        <div class="subtitle">ADMINISTRATOR VIEW</div>
+        <div class="title" style="margin-bottom:0;">Master Ledger</div>
       </div>
+      <div>
+        <button type="button" class="btn-logout" onclick="clearTableData()" style="margin-right: 10px;">Clear Data</button>
+        <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="text-left">Date</th>
+            <th class="text-left">User</th>
+            <th class="col-yellow">Cash Florin</th>
+            <th class="col-yellow">Cash USD</th>
+            <th class="col-gray">Expenses</th>
+            <th class="col-yellow">Total Calculated</th>
+            <th>Cierres</th>
+            <th class="col-red">Diferencia</th>
+            <th class="col-blue">MCB Online</th>
+            <th class="col-blue">Vida Nova</th>
+          </tr>
+        </thead>
+        <tbody id="admin-table-body">
+          <!-- Dynamically Rendered -->
+        </tbody>
+      </table>
     </div>
   </div>
 
 </div>
 
-<!-- TIMEOUT POPUP MODAL -->
-<div id="timeout-modal" class="modal-overlay">
-  <div class="modal-content">
-    <h3>Session Timing Out</h3>
-    <p>You have been inactive. You will be automatically logged out in <span id="modal-timer">30</span> seconds.</p>
-    <button class="btn-primary" onclick="resetInactivityTimer()">Stay Logged In</button>
-  </div>
-</div>
-
 <script>
-  let userPins = JSON.parse(localStorage.getItem('registered_user_pins')) || {};
-  let registerEntries = JSON.parse(localStorage.getItem('daily_register_entries')) || [];
+  let userPins = {};
+  let closingEntries = [];
   let selectedUser = null;
+  const USD_EXCHANGE_RATE = 1.75; // Used to calculate Total Florin
 
-  let inactivityTimer = null;
-  let countdownTimer = null;
-  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
-  const WARNING_LIMIT = 30; // 30 seconds
+  // Load state safely
+  window.addEventListener('DOMContentLoaded', () => {
+    try {
+      userPins = JSON.parse(localStorage.getItem('registered_user_pins')) || {};
+      closingEntries = JSON.parse(localStorage.getItem('daily_closing_entries')) || [];
+    } catch (e) {
+      userPins = {};
+      closingEntries = [];
+    }
+  });
 
   function onUserSelectChange(selectElement) {
     const userName = selectElement.value;
-    if (userName) {
-      selectUser(userName);
-    }
+    if (userName) selectUser(userName);
   }
 
   function selectUser(userName) {
@@ -556,10 +554,10 @@
 
   function handlePinSetup(event) {
     event.preventDefault();
-    const pin = document.getElementById('new-pin-input').value;
-    const confirm = document.getElementById('confirm-pin-input').value;
+    const pin = document.getElementById('new-pin-input').value.trim();
+    const confirm = document.getElementById('confirm-pin-input').value.trim();
 
-    if (pin.length === 4 && pin === confirm) {
+    if (/^\d{4}$/.test(pin) && pin === confirm) {
       userPins[selectedUser] = pin;
       localStorage.setItem('registered_user_pins', JSON.stringify(userPins));
       clearInputs();
@@ -571,7 +569,7 @@
 
   function handleLogin(event) {
     event.preventDefault();
-    const enteredPin = document.getElementById('pin-input').value;
+    const enteredPin = document.getElementById('pin-input').value.trim();
 
     if (selectedUser && userPins[selectedUser] === enteredPin) {
       loginSuccess();
@@ -583,61 +581,107 @@
   }
 
   function loginSuccess() {
-    document.getElementById('welcome-title').textContent = selectedUser;
     clearInputs();
-    renderTable();
-    switchScreen('screen-dashboard');
-    startInactivityTracker();
+   
+    // Set today's date automatically in the form
+    document.getElementById('entry-date').valueAsDate = new Date();
+    document.getElementById('success-message').style.display = 'none';
+
+    // ROLE BASED ACCESS CONTROL
+    if (selectedUser === "Inaam Ossais (Admin)") {
+      document.getElementById('main-container').classList.add('admin-mode');
+      renderAdminTable();
+      switchScreen('screen-admin-dashboard');
+    } else {
+      document.getElementById('main-container').classList.remove('admin-mode');
+      document.getElementById('user-welcome-title').textContent = selectedUser;
+      switchScreen('screen-user-dashboard');
+    }
   }
 
-  function handleRegisterSubmit(event) {
+  function handleUserSubmit(event) {
     event.preventDefault();
-    const desc = document.getElementById('entry-description').value;
-    const type = document.getElementById('entry-payment-type').value;
-    const amount = parseFloat(document.getElementById('entry-amount').value).toFixed(2);
-    const notes = document.getElementById('entry-notes').value;
+   
+    const date = document.getElementById('entry-date').value;
+    const cashFlorin = parseFloat(document.getElementById('entry-cash-florin').value) || 0;
+    const cashUSD = parseFloat(document.getElementById('entry-cash-usd').value) || 0;
+    const expenses = parseFloat(document.getElementById('entry-expenses').value) || 0;
+    const cierres = parseFloat(document.getElementById('entry-cierres').value) || 0;
+    const mcb = parseFloat(document.getElementById('entry-mcb').value) || 0;
+    const vidanova = parseFloat(document.getElementById('entry-vidanova').value) || 0;
 
-    const newEntry = {
+    // MATH LOGIC based on spreadsheet: Total = Cash Florin + (Cash USD * 1.75) + Expenses
+    const calculatedTotal = cashFlorin + (cashUSD * USD_EXCHANGE_RATE) + expenses;
+   
+    // Diferencia = Total - Cierres
+    const diferencia = calculatedTotal - cierres;
+
+    const newRecord = {
       id: Date.now(),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: date,
       user: selectedUser,
-      description: desc,
-      type: type,
-      amount: amount,
-      notes: notes
+      cashFlorin: cashFlorin.toFixed(2),
+      cashUSD: cashUSD.toFixed(2),
+      expenses: expenses.toFixed(2),
+      total: calculatedTotal.toFixed(2),
+      cierres: cierres.toFixed(2),
+      diferencia: diferencia.toFixed(2),
+      mcb: mcb.toFixed(2),
+      vidanova: vidanova.toFixed(2)
     };
 
-    registerEntries.unshift(newEntry);
-    localStorage.setItem('daily_register_entries', JSON.stringify(registerEntries));
+    closingEntries.push(newRecord); // Add to end of array to keep chronological order
+    localStorage.setItem('daily_closing_entries', JSON.stringify(closingEntries));
 
-    // Reset Form Fields
-    document.getElementById('entry-description').value = '';
-    document.getElementById('entry-amount').value = '';
-    document.getElementById('entry-notes').value = '';
-
-    renderTable();
+    // Reset Form
+    event.target.reset();
+    document.getElementById('entry-date').valueAsDate = new Date();
+   
+    // Show Success Message
+    const successMsg = document.getElementById('success-message');
+    successMsg.style.display = 'block';
+    setTimeout(() => { successMsg.style.display = 'none'; }, 4000);
   }
 
-  function renderTable() {
-    const tbody = document.getElementById('register-table-body');
+  function renderAdminTable() {
+    const tbody = document.getElementById('admin-table-body');
     tbody.innerHTML = '';
 
-    if (registerEntries.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="empty-table-msg">No transactions recorded yet today.</td></tr>`;
+    if (!closingEntries || closingEntries.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" class="empty-table-msg">No closing data recorded yet.</td></tr>`;
       return;
     }
 
-    registerEntries.forEach(entry => {
+    closingEntries.forEach(entry => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td>${entry.time}</td>
-        <td><strong>${entry.user}</strong></td>
-        <td>${entry.description} ${entry.notes ? `<small style="color:var(--text-muted);">(${entry.notes})</small>` : ''}</td>
-        <td><span style="color:${entry.type === 'Cash' ? '#10B981' : '#00F0FF'}; font-weight:bold;">${entry.type}</span></td>
-        <td><strong>$${entry.amount}</strong></td>
+        <td class="text-left">${entry.date}</td>
+        <td class="text-left">${escapeHtml(entry.user)}</td>
+        <td class="col-yellow">XCG ${entry.cashFlorin}</td>
+        <td class="col-yellow">$ ${entry.cashUSD}</td>
+        <td class="col-gray">XCG ${entry.expenses}</td>
+        <td class="col-yellow">XCG ${entry.total}</td>
+        <td>XCG ${entry.cierres}</td>
+        <td class="col-red">XCG ${entry.diferencia}</td>
+        <td class="col-blue">XCG ${entry.mcb}</td>
+        <td class="col-blue">XCG ${entry.vidanova}</td>
       `;
       tbody.appendChild(row);
     });
+  }
+
+  function clearTableData() {
+    if(confirm("Are you sure you want to delete all historical records? This cannot be undone.")) {
+        closingEntries = [];
+        localStorage.setItem('daily_closing_entries', JSON.stringify(closingEntries));
+        renderAdminTable();
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   function showUserSelection() {
@@ -656,64 +700,16 @@
   }
 
   function logout() {
-    stopInactivityTracker();
     clearInputs();
     selectedUser = null;
     document.getElementById('user-dropdown').selectedIndex = 0;
-    hideModal();
+    document.getElementById('main-container').classList.remove('admin-mode');
     switchScreen('screen-users');
   }
 
   function switchScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
-  }
-
-  /* --- INACTIVITY TIMEOUT LOGIC --- */
-
-  function startInactivityTracker() {
-    stopInactivityTracker();
-    ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
-      window.addEventListener(evt, resetInactivityTimer);
-    });
-    resetInactivityTimer();
-  }
-
-  function stopInactivityTracker() {
-    clearTimeout(inactivityTimer);
-    clearInterval(countdownTimer);
-    ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
-      window.removeEventListener(evt, resetInactivityTimer);
-    });
-  }
-
-  function resetInactivityTimer() {
-    hideModal();
-    clearTimeout(inactivityTimer);
-    clearInterval(countdownTimer);
-
-    if (document.getElementById('screen-dashboard').classList.contains('active')) {
-      inactivityTimer = setTimeout(showInactivityWarning, INACTIVITY_LIMIT);
-    }
-  }
-
-  function showInactivityWarning() {
-    let secondsLeft = WARNING_LIMIT;
-    document.getElementById('modal-timer').textContent = secondsLeft;
-    document.getElementById('timeout-modal').classList.add('active');
-
-    countdownTimer = setInterval(() => {
-      secondsLeft--;
-      document.getElementById('modal-timer').textContent = secondsLeft;
-      if (secondsLeft <= 0) {
-        clearInterval(countdownTimer);
-        logout();
-      }
-    }, 1000);
-  }
-
-  function hideModal() {
-    document.getElementById('timeout-modal').classList.remove('active');
   }
 </script>
 
