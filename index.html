@@ -730,7 +730,7 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-  
+ 
     /* Click-and-hold detail popup */
     .sum-cell {
       cursor: pointer;
@@ -878,7 +878,10 @@
         <div class="subtitle">END OF DAY REPORT</div>
         <div class="title" id="user-welcome-title" style="margin-bottom:0;">Submit Data</div>
       </div>
-      <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+      <div class="header-actions">
+        <button type="button" class="btn-secondary" id="btn-back-to-admin" style="display:none;" onclick="backToAdminDashboard()">← Back to Ledger</button>
+        <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+      </div>
     </div>
 
     <div class="status-bar">
@@ -1071,24 +1074,50 @@
 
 <script>
   // ===================== STATE =====================
+  // NOTE: userPins is keyed by a slugified username and holds a SHA-256
+  // hash of the PIN, loaded from the Firestore "userPins" collection.
+  // This used to live in localStorage, which meant every browser/device
+  // had its own independent set of PINs — anyone opening the app in a
+  // fresh browser could create a brand-new PIN for "Inaam Ossais (Admin)"
+  // and get full admin access. Storing it centrally in Firestore closes
+  // that specific hole. It is still not true server-side authentication
+  // (the pass/fail check happens in client JS), so anyone with dev-tools
+  // access to this page can still call loginSuccess() directly. Real
+  // security requires Firestore Security Rules that restrict writes to
+  // the "entries"/"userPins" collections, ideally behind Firebase Auth
+  // or a Cloud Function that verifies the PIN server-side.
   let userPins = {};
+  let pinsLoaded = false;
   let closingEntries = [];
   let selectedUser = null;
   let unsubscribeEntries = null;
+  let unsubscribePins = null;
   let firebaseReady = false;
   const USD_EXCHANGE_RATE = 1.75;
+
+  function slugUser(name) {
+    return (name || "").replace(/[^a-zA-Z0-9]/g, "_");
+  }
+
+  async function hashPin(pin) {
+    const enc = new TextEncoder().encode("xtremezone_salt_" + pin);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
 
   // ===================== FIREBASE READY =====================
   window.addEventListener("firebase-ready", () => {
     firebaseReady = true;
     updateFirebaseStatus(true);
     startRealtimeListener();
+    startPinsListener();
   });
 
   if (window.firebaseDb) {
     firebaseReady = true;
     updateFirebaseStatus(true);
     startRealtimeListener();
+    startPinsListener();
   }
 
   function updateFirebaseStatus(online) {
@@ -1145,13 +1174,33 @@
     });
   }
 
+  // ===================== PIN LISTENER =====================
+  function startPinsListener() {
+    if (!window.firebaseDb || !window.firebaseModules) return;
+
+    const { collection, onSnapshot } = window.firebaseModules;
+    const db = window.firebaseDb;
+
+    if (unsubscribePins) {
+      unsubscribePins();
+      unsubscribePins = null;
+    }
+
+    unsubscribePins = onSnapshot(collection(db, "userPins"), (snapshot) => {
+      const loaded = {};
+      snapshot.forEach((docSnap) => {
+        loaded[docSnap.id] = docSnap.data().pinHash;
+      });
+      userPins = loaded;
+      pinsLoaded = true;
+    }, (error) => {
+      console.error("Pins listener error:", error);
+      alert("Could not load user PINs from the cloud. Check Firebase security rules and internet.\n\n" + error.message);
+    });
+  }
+
   // ===================== INIT =====================
   window.addEventListener("DOMContentLoaded", () => {
-    try {
-      userPins = JSON.parse(localStorage.getItem("registered_user_pins")) || {};
-    } catch (e) {
-      userPins = {};
-    }
     const now = new Date();
     const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const monthPicker = document.getElementById("month-picker");
@@ -1165,10 +1214,14 @@
   }
 
   function selectUser(userName) {
+    if (!firebaseReady || !pinsLoaded) {
+      alert("Still connecting to the cloud. Please wait a moment and try again.");
+      return;
+    }
     selectedUser = userName;
     document.querySelectorAll(".display-user-name").forEach(el => el.textContent = userName);
     clearInputs();
-    if (!userPins[selectedUser]) {
+    if (!userPins[slugUser(selectedUser)]) {
       switchScreen("screen-setup-pin");
       document.getElementById("new-pin-input").focus();
     } else {
@@ -1177,29 +1230,55 @@
     }
   }
 
-  function handlePinSetup(event) {
+  async function handlePinSetup(event) {
     event.preventDefault();
     const pin = document.getElementById("new-pin-input").value.trim();
-    const confirm = document.getElementById("confirm-pin-input").value.trim();
-    if (/^\d{4}$/.test(pin) && pin === confirm) {
-      userPins[selectedUser] = pin;
-      localStorage.setItem("registered_user_pins", JSON.stringify(userPins));
+    const confirmPin = document.getElementById("confirm-pin-input").value.trim();
+    if (!(/^\d{4}$/.test(pin) && pin === confirmPin)) {
+      document.getElementById("setup-error").style.display = "block";
+      return;
+    }
+    if (!window.firebaseDb || !window.firebaseModules) {
+      alert("Cloud is not ready yet. Please wait a moment and try again.");
+      return;
+    }
+    showLoading(true);
+    try {
+      const pinHash = await hashPin(pin);
+      const { doc, setDoc } = window.firebaseModules;
+      const key = slugUser(selectedUser);
+      await setDoc(doc(window.firebaseDb, "userPins", key), {
+        user: selectedUser,
+        pinHash: pinHash,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      userPins[key] = pinHash;
       clearInputs();
       loginSuccess();
-    } else {
-      document.getElementById("setup-error").style.display = "block";
+    } catch (err) {
+      alert("Failed to save PIN to cloud:\n" + err.message);
+    } finally {
+      showLoading(false);
     }
   }
 
-  function handleLogin(event) {
+  async function handleLogin(event) {
     event.preventDefault();
     const enteredPin = document.getElementById("pin-input").value.trim();
-    if (selectedUser && userPins[selectedUser] === enteredPin) {
-      loginSuccess();
-    } else {
-      document.getElementById("login-error").style.display = "block";
-      document.getElementById("pin-input").value = "";
-      document.getElementById("pin-input").focus();
+    if (!selectedUser) return;
+    showLoading(true);
+    try {
+      const enteredHash = await hashPin(enteredPin);
+      const key = slugUser(selectedUser);
+      if (userPins[key] && userPins[key] === enteredHash) {
+        loginSuccess();
+      } else {
+        document.getElementById("login-error").style.display = "block";
+        document.getElementById("pin-input").value = "";
+        document.getElementById("pin-input").focus();
+      }
+    } finally {
+      showLoading(false);
     }
   }
 
@@ -1219,6 +1298,7 @@
     } else {
       document.getElementById("main-container").classList.remove("admin-mode");
       document.getElementById("user-welcome-title").textContent = selectedUser;
+      document.getElementById("btn-back-to-admin").style.display = "none";
       lockDateToToday();
       switchScreen("screen-user-dashboard");
       checkExistingEntry();
@@ -1343,7 +1423,7 @@
     const mcbSum = mcb1 + mcb2;
     const vidaSum = vidanova1 + vidanova2;
 
-    const safeUser = selectedUser.replace(/[^a-zA-Z0-9]/g, "_");
+    const safeUser = slugUser(selectedUser);
     const docId = `${date}_${safeUser}`;
 
     const record = {
@@ -1404,12 +1484,22 @@
   function switchToAdminSubmit() {
     document.getElementById("main-container").classList.remove("admin-mode");
     document.getElementById("user-welcome-title").textContent = selectedUser + " (Admin)";
+    document.getElementById("btn-back-to-admin").style.display = "inline-block";
     unlockDateField();
     document.getElementById("success-message").style.display = "none";
     document.getElementById("overwrite-info").style.display = "none";
     updateLiveCalc();
     checkExistingEntry();
     switchScreen("screen-user-dashboard");
+  }
+
+  function backToAdminDashboard() {
+    document.getElementById("main-container").classList.add("admin-mode");
+    document.getElementById("success-message").style.display = "none";
+    document.getElementById("overwrite-info").style.display = "none";
+    switchScreen("screen-admin-dashboard");
+    renderMonthlyTable();
+    renderEntriesTable();
   }
 
   function fmtCurrency(val, prefix = "XCG") {
@@ -1725,6 +1815,7 @@
     clearInputs();
     document.getElementById("user-dropdown").selectedIndex = 0;
     document.getElementById("main-container").classList.remove("admin-mode");
+    document.getElementById("btn-back-to-admin").style.display = "none";
     switchScreen("screen-users");
   }
 
@@ -1744,6 +1835,7 @@
     selectedUser = null;
     document.getElementById("user-dropdown").selectedIndex = 0;
     document.getElementById("main-container").classList.remove("admin-mode");
+    document.getElementById("btn-back-to-admin").style.display = "none";
     switchScreen("screen-users");
   }
 
