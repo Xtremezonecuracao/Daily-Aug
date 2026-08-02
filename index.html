@@ -6,6 +6,19 @@
   <title>Xtremezone Curaçao - Daily Closing</title>
 
   <!-- Firebase SDK (Modular) -->
+  <!--
+    SECURITY NOTE: this app has no server and no Firebase Authentication, so it
+    cannot provide real access control on its own — the only real gate is your
+    Firestore Security Rules (not part of this file). What we CAN do here is
+    avoid handing out a general-purpose database toolkit: instead of exposing
+    the raw `db` handle plus generic setDoc/deleteDoc/writeBatch/collection
+    functions on `window` (which would let anyone with devtools open read,
+    write, or delete ANY document in ANY collection), we expose only a small,
+    named set of functions that each do exactly one thing this app needs
+    ("save an entry", "delete an entry by id", etc.), scoped to the two
+    collections this app uses. This narrows the attack surface considerably,
+    but it is a mitigation, not a substitute for locked-down Security Rules.
+  -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import {
@@ -34,18 +47,51 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Make Firebase available to the rest of the app
-    window.firebaseDb = db;
-    window.firebaseModules = {
-      collection,
-      doc,
-      setDoc,
-      deleteDoc,
-      onSnapshot,
-      query,
-      orderBy,
-      writeBatch
+    // ---- Narrow, purpose-built API surface (nothing raw is exposed) ----
+    const appDb = {
+      // Live subscription to all daily-closing entries.
+      subscribeEntries(onData, onError) {
+        const q = query(collection(db, "entries"), orderBy("date", "asc"));
+        return onSnapshot(q, (snapshot) => {
+          const entries = [];
+          snapshot.forEach((docSnap) => entries.push({ id: docSnap.id, ...docSnap.data() }));
+          onData(entries);
+        }, onError);
+      },
+      // Create or update one entry (merge = update in place if it exists).
+      saveEntry(docId, record) {
+        return setDoc(doc(db, "entries", docId), record, { merge: true });
+      },
+      // Delete a single entry by its document id.
+      removeEntry(docId) {
+        return deleteDoc(doc(db, "entries", docId));
+      },
+      // Delete many entries by id, batched in chunks of 450 (Firestore's batch limit is 500).
+      async removeEntriesBatch(docIds) {
+        const chunks = [];
+        for (let i = 0; i < docIds.length; i += 450) chunks.push(docIds.slice(i, i + 450));
+        for (const chunk of chunks) {
+          const batch = writeBatch(db);
+          chunk.forEach(id => batch.delete(doc(db, "entries", id)));
+          await batch.commit();
+        }
+      },
+      // Live subscription to user PINs, so a PIN set on one device is
+      // recognized on every device instead of only the browser it was set on.
+      subscribePins(onData, onError) {
+        return onSnapshot(collection(db, "userPins"), (snapshot) => {
+          const pins = {};
+          snapshot.forEach((docSnap) => { pins[docSnap.id] = docSnap.data().pin; });
+          onData(pins);
+        }, onError);
+      },
+      // Save/overwrite a user's PIN.
+      savePin(safeUserId, pin) {
+        return setDoc(doc(db, "userPins", safeUserId), { pin, updatedAt: new Date().toISOString() });
+      }
     };
+
+    window.appDb = appDb;
 
     // Signal that Firebase is ready
     window.dispatchEvent(new Event("firebase-ready"));
@@ -730,7 +776,7 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-  
+ 
     /* Click-and-hold detail popup */
     .sum-cell {
       cursor: pointer;
@@ -878,7 +924,10 @@
         <div class="subtitle">END OF DAY REPORT</div>
         <div class="title" id="user-welcome-title" style="margin-bottom:0;">Submit Data</div>
       </div>
-      <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+      <div class="header-actions">
+        <button type="button" class="btn-secondary" id="btn-back-admin" style="display:none;" onclick="goBackToAdminDashboard()">← Back to Dashboard</button>
+        <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+      </div>
     </div>
 
     <div class="status-bar">
@@ -1013,753 +1062,3 @@
         <table class="monthly-table">
           <thead>
             <tr>
-              <th rowspan="2" class="col-date">Date</th>
-              <th rowspan="2" class="col-user">User(s)</th>
-              <th colspan="4" class="group-header" style="background:#1a2e05; color:#FFE600;">Cash</th>
-              <th rowspan="2" class="col-orange">Cierres</th>
-              <th rowspan="2" class="col-red">Diferencia</th>
-              <th rowspan="2" class="col-green" style="background:#0a2540; color:#38BDF8;" title="Hold to see MCB 1 &amp; MCB 2">MCB Σ</th>
-              <th rowspan="2" class="col-green" style="background:#0a2540; color:#38BDF8;" title="Hold to see VN 1 &amp; VN 2">VN Σ</th>
-              <th rowspan="2" class="col-action"></th>
-            </tr>
-            <tr>
-              <th class="col-yellow">Cash Florin</th>
-              <th class="col-yellow">Cash USD</th>
-              <th class="col-gray">Expenses</th>
-              <th class="col-yellow">Total</th>
-            </tr>
-          </thead>
-          <tbody id="admin-monthly-body"></tbody>
-        </table>
-      </div>
-
-      <div class="legend">
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-yellow)"></span> Cash / Total</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-gray)"></span> Expenses</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-orange)"></span> Cierres</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-red)"></span> Diferencia</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-green)"></span> MCB Σ / VN Σ (hold for details)</div>
-      </div>
-    </div>
-
-    <!-- ALL ENTRIES VIEW -->
-    <div id="admin-entries-view" style="display:none;">
-      <div class="table-container">
-        <table class="monthly-table">
-          <thead>
-            <tr>
-              <th class="col-date">Date</th>
-              <th class="col-user">User</th>
-              <th class="col-yellow">Cash Florin</th>
-              <th class="col-yellow">Cash USD</th>
-              <th class="col-gray">Expenses</th>
-              <th class="col-yellow">Total</th>
-              <th class="col-orange">Cierres</th>
-              <th class="col-red">Diferencia</th>
-              <th class="col-green" title="Hold to see MCB 1 &amp; MCB 2">MCB Σ</th>
-              <th class="col-green" title="Hold to see VN 1 &amp; VN 2">VN Σ</th>
-              <th class="col-action"></th>
-            </tr>
-          </thead>
-          <tbody id="admin-entries-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-  // ===================== STATE =====================
-  let userPins = {};
-  let closingEntries = [];
-  let selectedUser = null;
-  let unsubscribeEntries = null;
-  let firebaseReady = false;
-  const USD_EXCHANGE_RATE = 1.75;
-
-  // ===================== FIREBASE READY =====================
-  window.addEventListener("firebase-ready", () => {
-    firebaseReady = true;
-    updateFirebaseStatus(true);
-    startRealtimeListener();
-  });
-
-  if (window.firebaseDb) {
-    firebaseReady = true;
-    updateFirebaseStatus(true);
-    startRealtimeListener();
-  }
-
-  function updateFirebaseStatus(online) {
-    const dots = [
-      document.getElementById("firebase-status-dot"),
-      document.getElementById("firebase-status-dot-user"),
-      document.getElementById("firebase-status-dot-admin")
-    ];
-    const texts = [
-      document.getElementById("firebase-status-text"),
-      document.getElementById("firebase-status-text-user"),
-      document.getElementById("firebase-status-text-admin")
-    ];
-    dots.forEach(d => { if (d) d.classList.toggle("online", online); });
-    texts.forEach(t => { if (t) t.textContent = online ? "Cloud connected · Live sync" : "Connecting to cloud..."; });
-  }
-
-  function showLoading(show) {
-    document.getElementById("loading-overlay").classList.toggle("visible", show);
-  }
-
-  // ===================== REAL-TIME LISTENER =====================
-  function startRealtimeListener() {
-    if (!window.firebaseDb || !window.firebaseModules) return;
-
-    const { collection, onSnapshot, orderBy, query } = window.firebaseModules;
-    const db = window.firebaseDb;
-
-    if (unsubscribeEntries) {
-      unsubscribeEntries();
-      unsubscribeEntries = null;
-    }
-
-    const q = query(collection(db, "entries"), orderBy("date", "asc"));
-
-    unsubscribeEntries = onSnapshot(q, (snapshot) => {
-      closingEntries = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        closingEntries.push({ id: docSnap.id, ...data });
-      });
-
-      if (document.getElementById("screen-admin-dashboard").classList.contains("active")) {
-        renderMonthlyTable();
-        renderEntriesTable();
-      }
-      if (document.getElementById("screen-user-dashboard").classList.contains("active")) {
-        checkExistingEntry();
-      }
-    }, (error) => {
-      console.error("Firestore listener error:", error);
-      updateFirebaseStatus(false);
-      alert("Cloud connection error. Check Firebase security rules and internet.\n\n" + error.message);
-    });
-  }
-
-  // ===================== INIT =====================
-  window.addEventListener("DOMContentLoaded", () => {
-    try {
-      userPins = JSON.parse(localStorage.getItem("registered_user_pins")) || {};
-    } catch (e) {
-      userPins = {};
-    }
-    const now = new Date();
-    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const monthPicker = document.getElementById("month-picker");
-    if (monthPicker) monthPicker.value = monthStr;
-  });
-
-  // ===================== AUTH =====================
-  function onUserSelectChange(selectElement) {
-    const userName = selectElement.value;
-    if (userName) selectUser(userName);
-  }
-
-  function selectUser(userName) {
-    selectedUser = userName;
-    document.querySelectorAll(".display-user-name").forEach(el => el.textContent = userName);
-    clearInputs();
-    if (!userPins[selectedUser]) {
-      switchScreen("screen-setup-pin");
-      document.getElementById("new-pin-input").focus();
-    } else {
-      switchScreen("screen-pin");
-      document.getElementById("pin-input").focus();
-    }
-  }
-
-  function handlePinSetup(event) {
-    event.preventDefault();
-    const pin = document.getElementById("new-pin-input").value.trim();
-    const confirm = document.getElementById("confirm-pin-input").value.trim();
-    if (/^\d{4}$/.test(pin) && pin === confirm) {
-      userPins[selectedUser] = pin;
-      localStorage.setItem("registered_user_pins", JSON.stringify(userPins));
-      clearInputs();
-      loginSuccess();
-    } else {
-      document.getElementById("setup-error").style.display = "block";
-    }
-  }
-
-  function handleLogin(event) {
-    event.preventDefault();
-    const enteredPin = document.getElementById("pin-input").value.trim();
-    if (selectedUser && userPins[selectedUser] === enteredPin) {
-      loginSuccess();
-    } else {
-      document.getElementById("login-error").style.display = "block";
-      document.getElementById("pin-input").value = "";
-      document.getElementById("pin-input").focus();
-    }
-  }
-
-  function loginSuccess() {
-    clearInputs();
-    document.getElementById("success-message").style.display = "none";
-    document.getElementById("overwrite-info").style.display = "none";
-    updateLiveCalc();
-
-    if (selectedUser === "Inaam Ossais (Admin)") {
-      document.getElementById("main-container").classList.add("admin-mode");
-      unlockDateField();
-      switchScreen("screen-admin-dashboard");
-      switchAdminTab("monthly");
-      renderMonthlyTable();
-      renderEntriesTable();
-    } else {
-      document.getElementById("main-container").classList.remove("admin-mode");
-      document.getElementById("user-welcome-title").textContent = selectedUser;
-      lockDateToToday();
-      switchScreen("screen-user-dashboard");
-      checkExistingEntry();
-    }
-  }
-
-  // Lock date to today for regular users
-  function lockDateToToday() {
-    const dateInput = document.getElementById("entry-date");
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    const todayStr = `${yyyy}-${mm}-${dd}`;
-    dateInput.value = todayStr;
-    dateInput.min = todayStr;
-    dateInput.max = todayStr;
-    dateInput.readOnly = true;
-    // Prevent calendar from opening on some browsers
-    dateInput.style.pointerEvents = "none";
-    dateInput.style.opacity = "0.85";
-    const hint = dateInput.parentElement.querySelector(".hint");
-    if (hint) hint.textContent = "Date is locked to today. Only today's data can be submitted.";
-  }
-
-  // Unlock date for admin
-  function unlockDateField() {
-    const dateInput = document.getElementById("entry-date");
-    dateInput.min = "";
-    dateInput.max = "";
-    dateInput.readOnly = false;
-    dateInput.style.pointerEvents = "";
-    dateInput.style.opacity = "";
-    dateInput.valueAsDate = new Date();
-    const hint = dateInput.parentElement.querySelector(".hint");
-    if (hint) hint.textContent = "If an entry already exists for this date + user, it will be updated.";
-  }
-
-  // ===================== LIVE CALC =====================
-  function getNum(id) {
-    const v = parseFloat(document.getElementById(id).value);
-    return isNaN(v) ? 0 : Math.max(0, v);
-  }
-
-  function updateLiveCalc() {
-    const cashFlorin = getNum("entry-cash-florin");
-    const cashUSD = getNum("entry-cash-usd");
-    const expenses = getNum("entry-expenses");
-    const cierres = getNum("entry-cierres");
-    const mcb1 = getNum("entry-mcb1");
-    const mcb2 = getNum("entry-mcb2");
-    const vida1 = getNum("entry-vidanova1");
-    const vida2 = getNum("entry-vidanova2");
-
-    const total = cashFlorin + (cashUSD * USD_EXCHANGE_RATE) + expenses;
-    const diferencia = total - cierres;
-    const mcbSum = mcb1 + mcb2;
-    const vidaSum = vida1 + vida2;
-
-    document.getElementById("live-total").textContent = `XCG ${total.toFixed(2)}`;
-    document.getElementById("live-diferencia").textContent = `XCG ${diferencia.toFixed(2)}`;
-    document.getElementById("live-mcb-sum").textContent = `XCG ${mcbSum.toFixed(2)}`;
-    document.getElementById("live-vida-sum").textContent = `XCG ${vidaSum.toFixed(2)}`;
-
-    const diffBox = document.getElementById("live-diff-box");
-    if (Math.abs(diferencia) > 0.01) diffBox.classList.add("warning");
-    else diffBox.classList.remove("warning");
-  }
-
-  function checkExistingEntry() {
-    const date = document.getElementById("entry-date").value;
-    if (!date || !selectedUser) return;
-
-    const existing = closingEntries.find(e => e.date === date && e.user === selectedUser);
-    const info = document.getElementById("overwrite-info");
-    const btn = document.getElementById("submit-btn");
-
-    if (existing) {
-      info.style.display = "block";
-      info.textContent = `An entry already exists for ${date}. Submitting will update it.`;
-      btn.textContent = "Update Daily Numbers";
-      document.getElementById("entry-cash-florin").value = existing.cashFlorin;
-      document.getElementById("entry-cash-usd").value = existing.cashUSD;
-      document.getElementById("entry-expenses").value = existing.expenses;
-      document.getElementById("entry-cierres").value = existing.cierres;
-      document.getElementById("entry-mcb1").value = existing.mcb1 || 0;
-      document.getElementById("entry-mcb2").value = existing.mcb2 || 0;
-      document.getElementById("entry-vidanova1").value = existing.vidanova1 || 0;
-      document.getElementById("entry-vidanova2").value = existing.vidanova2 || 0;
-      updateLiveCalc();
-    } else {
-      info.style.display = "none";
-      btn.textContent = "Submit Daily Numbers";
-    }
-  }
-
-  // ===================== SUBMIT TO FIRESTORE =====================
-  async function handleUserSubmit(event) {
-    event.preventDefault();
-    if (!firebaseReady || !window.firebaseDb) {
-      alert("Cloud is not ready yet. Please wait a moment and try again.");
-      return;
-    }
-
-    // Force today for non-admin users
-    if (selectedUser !== "Inaam Ossais (Admin)") {
-      lockDateToToday();
-    }
-
-    const date = document.getElementById("entry-date").value;
-    const cashFlorin = getNum("entry-cash-florin");
-    const cashUSD = getNum("entry-cash-usd");
-    const expenses = getNum("entry-expenses");
-    const cierres = getNum("entry-cierres");
-    const mcb1 = getNum("entry-mcb1");
-    const mcb2 = getNum("entry-mcb2");
-    const vidanova1 = getNum("entry-vidanova1");
-    const vidanova2 = getNum("entry-vidanova2");
-
-    const calculatedTotal = cashFlorin + (cashUSD * USD_EXCHANGE_RATE) + expenses;
-    const diferencia = calculatedTotal - cierres;
-    const mcbSum = mcb1 + mcb2;
-    const vidaSum = vidanova1 + vidanova2;
-
-    const safeUser = selectedUser.replace(/[^a-zA-Z0-9]/g, "_");
-    const docId = `${date}_${safeUser}`;
-
-    const record = {
-      date: date,
-      user: selectedUser,
-      cashFlorin: Number(cashFlorin.toFixed(2)),
-      cashUSD: Number(cashUSD.toFixed(2)),
-      expenses: Number(expenses.toFixed(2)),
-      total: Number(calculatedTotal.toFixed(2)),
-      cierres: Number(cierres.toFixed(2)),
-      diferencia: Number(diferencia.toFixed(2)),
-      mcb1: Number(mcb1.toFixed(2)),
-      mcb2: Number(mcb2.toFixed(2)),
-      mcbSum: Number(mcbSum.toFixed(2)),
-      vidanova1: Number(vidanova1.toFixed(2)),
-      vidanova2: Number(vidanova2.toFixed(2)),
-      vidaSum: Number(vidaSum.toFixed(2)),
-      rate: USD_EXCHANGE_RATE,
-      updatedAt: new Date().toISOString()
-    };
-
-    const isUpdate = closingEntries.some(e => e.date === date && e.user === selectedUser);
-
-    showLoading(true);
-    const submitBtn = document.getElementById("submit-btn");
-    submitBtn.disabled = true;
-
-    try {
-      const { doc, setDoc } = window.firebaseModules;
-      await setDoc(doc(window.firebaseDb, "entries", docId), record, { merge: true });
-
-      event.target.reset();
-      document.getElementById("entry-date").value = date;
-      updateLiveCalc();
-      checkExistingEntry();
-
-      const successMsg = document.getElementById("success-message");
-      successMsg.style.display = "block";
-      successMsg.textContent = isUpdate ? "Daily record updated in the cloud!" : "Daily record saved to the cloud!";
-      setTimeout(() => { successMsg.style.display = "none"; }, 3500);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save to cloud:\n" + err.message + "\n\nCheck Firebase security rules (they must allow write).");
-    } finally {
-      showLoading(false);
-      submitBtn.disabled = false;
-    }
-  }
-
-  // ===================== ADMIN RENDER =====================
-  function switchAdminTab(tab) {
-    document.getElementById("tab-monthly").classList.toggle("active", tab === "monthly");
-    document.getElementById("tab-entries").classList.toggle("active", tab === "entries");
-    document.getElementById("admin-monthly-view").style.display = tab === "monthly" ? "block" : "none";
-    document.getElementById("admin-entries-view").style.display = tab === "entries" ? "block" : "none";
-  }
-
-  function switchToAdminSubmit() {
-    document.getElementById("main-container").classList.remove("admin-mode");
-    document.getElementById("user-welcome-title").textContent = selectedUser + " (Admin)";
-    unlockDateField();
-    document.getElementById("success-message").style.display = "none";
-    document.getElementById("overwrite-info").style.display = "none";
-    updateLiveCalc();
-    checkExistingEntry();
-    switchScreen("screen-user-dashboard");
-  }
-
-  function fmtCurrency(val, prefix = "XCG") {
-    if (val === null || val === undefined || val === "" || Number(val) === 0) {
-      return '<span class="empty-cell">—</span>';
-    }
-    return `${prefix} ${Number(val).toFixed(2)}`;
-  }
-
-  function fmtUSD(val) {
-    if (val === null || val === undefined || val === "" || Number(val) === 0) {
-      return '<span class="empty-cell">—</span>';
-    }
-    return `$ ${Number(val).toFixed(2)}`;
-  }
-
-  function renderMonthlyTable() {
-    const tbody = document.getElementById("admin-monthly-body");
-    const monthPicker = document.getElementById("month-picker");
-    const monthVal = monthPicker.value;
-
-    if (!monthVal) {
-      tbody.innerHTML = `<tr><td colspan="11" class="empty-table-msg">Select a month</td></tr>`;
-      return;
-    }
-
-    const [year, month] = monthVal.split("-").map(Number);
-    const daysInMonth = new Date(year, month, 0).getDate();
-
-    const byDate = {};
-    closingEntries.forEach(e => {
-      if (!e.date || !e.date.startsWith(monthVal)) return;
-      const day = e.date;
-      if (!byDate[day]) {
-        byDate[day] = {
-          users: [],
-          cashFlorin: 0, cashUSD: 0, expenses: 0, total: 0,
-          cierres: 0, diferencia: 0,
-          mcb1: 0, mcb2: 0, mcbSum: 0,
-          vidanova1: 0, vidanova2: 0, vidaSum: 0
-        };
-      }
-      byDate[day].users.push(e.user);
-      byDate[day].cashFlorin += Number(e.cashFlorin) || 0;
-      byDate[day].cashUSD += Number(e.cashUSD) || 0;
-      byDate[day].expenses += Number(e.expenses) || 0;
-      byDate[day].total += Number(e.total) || 0;
-      byDate[day].cierres += Number(e.cierres) || 0;
-      byDate[day].diferencia += Number(e.diferencia) || 0;
-      byDate[day].mcb1 += Number(e.mcb1) || 0;
-      byDate[day].mcb2 += Number(e.mcb2) || 0;
-      byDate[day].mcbSum += Number(e.mcbSum) || 0;
-      byDate[day].vidanova1 += Number(e.vidanova1) || 0;
-      byDate[day].vidanova2 += Number(e.vidanova2) || 0;
-      byDate[day].vidaSum += Number(e.vidaSum) || 0;
-    });
-
-    let html = "";
-    let monthTotals = {
-      cashFlorin: 0, cashUSD: 0, expenses: 0, total: 0,
-      cierres: 0, diferencia: 0,
-      mcb1: 0, mcb2: 0, mcbSum: 0,
-      vidanova1: 0, vidanova2: 0, vidaSum: 0,
-      daysWithData: 0
-    };
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const dayName = new Date(year, month - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-      const data = byDate[dateStr];
-
-      if (data) {
-        monthTotals.daysWithData++;
-        monthTotals.cashFlorin += data.cashFlorin;
-        monthTotals.cashUSD += data.cashUSD;
-        monthTotals.expenses += data.expenses;
-        monthTotals.total += data.total;
-        monthTotals.cierres += data.cierres;
-        monthTotals.diferencia += data.diferencia;
-        monthTotals.mcb1 += data.mcb1;
-        monthTotals.mcb2 += data.mcb2;
-        monthTotals.mcbSum += data.mcbSum;
-        monthTotals.vidanova1 += data.vidanova1;
-        monthTotals.vidanova2 += data.vidanova2;
-        monthTotals.vidaSum += data.vidaSum;
-
-        const usersLabel = [...new Set(data.users)].join(", ");
-        html += `
-          <tr>
-            <td class="col-date">${dayName}</td>
-            <td class="col-user" title="${escapeHtml(usersLabel)}">${escapeHtml(usersLabel)}</td>
-            <td class="col-yellow">${fmtCurrency(data.cashFlorin)}</td>
-            <td class="col-yellow">${fmtUSD(data.cashUSD)}</td>
-            <td class="col-gray">${fmtCurrency(data.expenses)}</td>
-            <td class="col-yellow">${fmtCurrency(data.total)}</td>
-            <td class="col-orange">${fmtCurrency(data.cierres)}</td>
-            <td class="col-red">${fmtCurrency(data.diferencia)}</td>
-            <td class="col-green sum-cell"
-                data-type="mcb"
-                data-v1="${Number(data.mcb1).toFixed(2)}"
-                data-v2="${Number(data.mcb2).toFixed(2)}"
-                onmousedown="showDetailPopup(event, this)"
-                onmouseup="hideDetailPopup()"
-                onmouseleave="hideDetailPopup()"
-                ontouchstart="showDetailPopup(event, this)"
-                ontouchend="hideDetailPopup()">${fmtCurrency(data.mcbSum)}</td>
-            <td class="col-green sum-cell"
-                data-type="vn"
-                data-v1="${Number(data.vidanova1).toFixed(2)}"
-                data-v2="${Number(data.vidanova2).toFixed(2)}"
-                onmousedown="showDetailPopup(event, this)"
-                onmouseup="hideDetailPopup()"
-                onmouseleave="hideDetailPopup()"
-                ontouchstart="showDetailPopup(event, this)"
-                ontouchend="hideDetailPopup()">${fmtCurrency(data.vidaSum)}</td>
-            <td class="col-action"><button class="btn-icon" title="Delete day entries" onclick="deleteDayEntries('${dateStr}')">🗑</button></td>
-          </tr>`;
-      } else {
-        html += `
-          <tr>
-            <td class="col-date">${dayName}</td>
-            <td class="col-user"><span class="empty-cell">—</span></td>
-            <td class="col-yellow"><span class="empty-cell">—</span></td>
-            <td class="col-yellow"><span class="empty-cell">—</span></td>
-            <td class="col-gray"><span class="empty-cell">—</span></td>
-            <td class="col-yellow"><span class="empty-cell">—</span></td>
-            <td class="col-orange"><span class="empty-cell">—</span></td>
-            <td class="col-red"><span class="empty-cell">—</span></td>
-            <td class="col-green"><span class="empty-cell">—</span></td>
-            <td class="col-green"><span class="empty-cell">—</span></td>
-            <td class="col-action"></td>
-          </tr>`;
-      }
-    }
-
-    html += `
-      <tr class="totals-row">
-        <td class="col-date">TOTAL</td>
-        <td class="col-user">${monthTotals.daysWithData} day(s)</td>
-        <td class="col-yellow">${fmtCurrency(monthTotals.cashFlorin)}</td>
-        <td class="col-yellow">${fmtUSD(monthTotals.cashUSD)}</td>
-        <td class="col-gray">${fmtCurrency(monthTotals.expenses)}</td>
-        <td class="col-yellow">${fmtCurrency(monthTotals.total)}</td>
-        <td class="col-orange">${fmtCurrency(monthTotals.cierres)}</td>
-        <td class="col-red">${fmtCurrency(monthTotals.diferencia)}</td>
-        <td class="col-green sum-cell"
-            data-type="mcb"
-            data-v1="${Number(monthTotals.mcb1).toFixed(2)}"
-            data-v2="${Number(monthTotals.mcb2).toFixed(2)}"
-            onmousedown="showDetailPopup(event, this)"
-            onmouseup="hideDetailPopup()"
-            onmouseleave="hideDetailPopup()"
-            ontouchstart="showDetailPopup(event, this)"
-            ontouchend="hideDetailPopup()">${fmtCurrency(monthTotals.mcbSum)}</td>
-        <td class="col-green sum-cell"
-            data-type="vn"
-            data-v1="${Number(monthTotals.vidanova1).toFixed(2)}"
-            data-v2="${Number(monthTotals.vidanova2).toFixed(2)}"
-            onmousedown="showDetailPopup(event, this)"
-            onmouseup="hideDetailPopup()"
-            onmouseleave="hideDetailPopup()"
-            ontouchstart="showDetailPopup(event, this)"
-            ontouchend="hideDetailPopup()">${fmtCurrency(monthTotals.vidaSum)}</td>
-        <td class="col-action"></td>
-      </tr>`;
-
-    tbody.innerHTML = html;
-    document.getElementById("month-summary-text").textContent =
-      `${monthTotals.daysWithData} day(s) with data · Rate: 1 USD = ${USD_EXCHANGE_RATE} XCG · Live`;
-  }
-
-  function renderEntriesTable() {
-    const tbody = document.getElementById("admin-entries-body");
-    if (!closingEntries || closingEntries.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="11" class="empty-table-msg">No closing data recorded yet.</td></tr>`;
-      return;
-    }
-    const sorted = [...closingEntries].sort((a, b) => b.date.localeCompare(a.date) || (b.user || "").localeCompare(a.user || ""));
-    tbody.innerHTML = sorted.map(entry => `
-      <tr>
-        <td class="col-date">${entry.date}</td>
-        <td class="col-user">${escapeHtml(entry.user)}</td>
-        <td class="col-yellow">${fmtCurrency(entry.cashFlorin)}</td>
-        <td class="col-yellow">${fmtUSD(entry.cashUSD)}</td>
-        <td class="col-gray">${fmtCurrency(entry.expenses)}</td>
-        <td class="col-yellow">${fmtCurrency(entry.total)}</td>
-        <td class="col-orange">${fmtCurrency(entry.cierres)}</td>
-        <td class="col-red">${fmtCurrency(entry.diferencia)}</td>
-        <td class="col-green sum-cell"
-            data-type="mcb"
-            data-v1="${Number(entry.mcb1 || 0).toFixed(2)}"
-            data-v2="${Number(entry.mcb2 || 0).toFixed(2)}"
-            onmousedown="showDetailPopup(event, this)"
-            onmouseup="hideDetailPopup()"
-            onmouseleave="hideDetailPopup()"
-            ontouchstart="showDetailPopup(event, this)"
-            ontouchend="hideDetailPopup()">${fmtCurrency(entry.mcbSum)}</td>
-        <td class="col-green sum-cell"
-            data-type="vn"
-            data-v1="${Number(entry.vidanova1 || 0).toFixed(2)}"
-            data-v2="${Number(entry.vidanova2 || 0).toFixed(2)}"
-            onmousedown="showDetailPopup(event, this)"
-            onmouseup="hideDetailPopup()"
-            onmouseleave="hideDetailPopup()"
-            ontouchstart="showDetailPopup(event, this)"
-            ontouchend="hideDetailPopup()">${fmtCurrency(entry.vidaSum)}</td>
-        <td class="col-action"><button class="btn-icon" title="Delete entry" onclick="deleteEntry('${entry.id}')">🗑</button></td>
-      </tr>
-    `).join("");
-  }
-
-  // ===================== DELETE =====================
-  async function deleteEntry(docId) {
-    if (!confirm("Delete this entry from the cloud?")) return;
-    if (!window.firebaseDb) return;
-    showLoading(true);
-    try {
-      const { doc, deleteDoc } = window.firebaseModules;
-      await deleteDoc(doc(window.firebaseDb, "entries", docId));
-    } catch (err) {
-      alert("Delete failed: " + err.message);
-    } finally {
-      showLoading(false);
-    }
-  }
-
-  async function deleteDayEntries(dateStr) {
-    if (!confirm(`Delete ALL entries for ${dateStr} from the cloud?`)) return;
-    if (!window.firebaseDb) return;
-    const toDelete = closingEntries.filter(e => e.date === dateStr);
-    if (toDelete.length === 0) return;
-    showLoading(true);
-    try {
-      const { doc, writeBatch } = window.firebaseModules;
-      const batch = writeBatch(window.firebaseDb);
-      toDelete.forEach(e => batch.delete(doc(window.firebaseDb, "entries", e.id)));
-      await batch.commit();
-    } catch (err) {
-      alert("Delete failed: " + err.message);
-    } finally {
-      showLoading(false);
-    }
-  }
-
-  async function clearTableData() {
-    if (!confirm("Are you sure you want to delete ALL historical records from the cloud? This cannot be undone.")) return;
-    if (!window.firebaseDb) return;
-    showLoading(true);
-    try {
-      const { doc, writeBatch } = window.firebaseModules;
-      const chunks = [];
-      for (let i = 0; i < closingEntries.length; i += 450) {
-        chunks.push(closingEntries.slice(i, i + 450));
-      }
-      for (const chunk of chunks) {
-        const batch = writeBatch(window.firebaseDb);
-        chunk.forEach(e => batch.delete(doc(window.firebaseDb, "entries", e.id)));
-        await batch.commit();
-      }
-    } catch (err) {
-      alert("Clear failed: " + err.message);
-    } finally {
-      showLoading(false);
-    }
-  }
-
-
-  // ===================== DETAIL POPUP (click-and-hold) =====================
-  function showDetailPopup(event, el) {
-    event.preventDefault();
-    const popup = document.getElementById("detail-popup");
-    const type = el.getAttribute("data-type");
-    const v1 = el.getAttribute("data-v1") || "0.00";
-    const v2 = el.getAttribute("data-v2") || "0.00";
-
-    if (type === "mcb") {
-      document.getElementById("popup-title").textContent = "MCB Breakdown";
-      document.getElementById("popup-label1").textContent = "MCB 1";
-      document.getElementById("popup-label2").textContent = "MCB 2";
-    } else {
-      document.getElementById("popup-title").textContent = "Vida Nova Breakdown";
-      document.getElementById("popup-label1").textContent = "VN 1";
-      document.getElementById("popup-label2").textContent = "VN 2";
-    }
-    document.getElementById("popup-val1").textContent = "XCG " + v1;
-    document.getElementById("popup-val2").textContent = "XCG " + v2;
-
-    const rect = el.getBoundingClientRect();
-    let left = rect.left + rect.width / 2 - 70;
-    let top = rect.top - 90;
-    if (top < 8) top = rect.bottom + 8;
-    if (left < 8) left = 8;
-    if (left + 160 > window.innerWidth) left = window.innerWidth - 168;
-
-    popup.style.left = left + "px";
-    popup.style.top = top + "px";
-    popup.classList.add("visible");
-  }
-
-  function hideDetailPopup() {
-    document.getElementById("detail-popup").classList.remove("visible");
-  }
-
-  // ===================== HELPERS =====================
-  function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text || "";
-    return div.innerHTML;
-  }
-
-  function showUserSelection() {
-    selectedUser = null;
-    clearInputs();
-    document.getElementById("user-dropdown").selectedIndex = 0;
-    document.getElementById("main-container").classList.remove("admin-mode");
-    switchScreen("screen-users");
-  }
-
-  function clearInputs() {
-    ["pin-input", "new-pin-input", "confirm-pin-input"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-    const loginErr = document.getElementById("login-error");
-    const setupErr = document.getElementById("setup-error");
-    if (loginErr) loginErr.style.display = "none";
-    if (setupErr) setupErr.style.display = "none";
-  }
-
-  function logout() {
-    clearInputs();
-    selectedUser = null;
-    document.getElementById("user-dropdown").selectedIndex = 0;
-    document.getElementById("main-container").classList.remove("admin-mode");
-    switchScreen("screen-users");
-  }
-
-  function switchScreen(screenId) {
-    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    document.getElementById(screenId).classList.add("active");
-  }
-</script>
-
-
-<!-- Detail popup for MCB / VN breakdown -->
-<div id="detail-popup" class="detail-popup">
-  <div class="popup-title" id="popup-title">Details</div>
-  <div class="popup-row"><span class="popup-label" id="popup-label1">—</span><span class="popup-value" id="popup-val1">—</span></div>
-  <div class="popup-row"><span class="popup-label" id="popup-label2">—</span><span class="popup-value" id="popup-val2">—</span></div>
-</div>
-
-</body>
-</html>
