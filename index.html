@@ -64,14 +64,14 @@
       --input-bg: #0F172A;
       --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
 
-      --cell-yellow: rgba(255, 230, 0, 0.18);
+      --cell-yellow: rgba(255, 230, 0, 0.22);
       --cell-yellow-solid: #FFE600;
-      --cell-red: rgba(255, 77, 77, 0.18);
-      --cell-blue: rgba(0, 195, 255, 0.15);
+      --cell-red: rgba(255, 77, 77, 0.22);
+      --cell-blue: rgba(0, 195, 255, 0.18);
       --cell-blue-solid: #38BDF8;
-      --cell-gray: rgba(148, 163, 184, 0.12);
-      --cell-orange: rgba(251, 146, 60, 0.18);
-      --cell-green: rgba(16, 185, 129, 0.15);
+      --cell-gray: rgba(148, 163, 184, 0.15);
+      --cell-orange: rgba(251, 146, 60, 0.22);
+      --cell-green: rgba(16, 185, 129, 0.20);
 
       --neon-pink: #FF007F;
       --neon-cyan: #00F0FF;
@@ -437,18 +437,20 @@
     }
 
     .btn-icon {
-      background: none;
-      border: none;
-      color: var(--text-muted);
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #F87171;
       cursor: pointer;
-      font-size: 14px;
-      padding: 4px 6px;
-      border-radius: 4px;
+      font-size: 13px;
+      padding: 3px 7px;
+      border-radius: 6px;
+      line-height: 1.2;
     }
 
     .btn-icon:hover {
-      color: #F87171;
-      background: rgba(239, 68, 68, 0.1);
+      color: #fff;
+      background: rgba(239, 68, 68, 0.55);
+      border-color: #F87171;
     }
 
     .error-msg {
@@ -539,20 +541,45 @@
       border: 1px solid var(--border-color);
       border-radius: 12px;
       background: var(--input-bg);
+      max-height: 70vh;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary) var(--border-color);
+    }
+
+    .table-container::-webkit-scrollbar {
+      height: 10px;
+      width: 10px;
+    }
+    .table-container::-webkit-scrollbar-track {
+      background: var(--border-color);
+      border-radius: 0 0 12px 12px;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 5px;
+    }
+
+    .scroll-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+      margin-bottom: 6px;
+      opacity: 0.8;
     }
 
     table.monthly-table {
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       border-collapse: collapse;
       text-align: right;
-      font-size: 12.5px;
+      font-size: 11.5px;
       white-space: nowrap;
-      min-width: 1100px;
     }
 
     table.monthly-table th,
     table.monthly-table td {
-      padding: 9px 10px;
+      padding: 7px 8px;
       border: 1px solid var(--border-color);
     }
 
@@ -561,41 +588,47 @@
       color: var(--text-main);
       font-weight: 700;
       text-transform: uppercase;
-      font-size: 10px;
-      letter-spacing: 0.6px;
+      font-size: 9.5px;
+      letter-spacing: 0.5px;
       text-align: center;
       position: sticky;
       top: 0;
-      z-index: 2;
+      z-index: 3;
     }
 
     table.monthly-table th.group-header {
-      font-size: 11px;
-      letter-spacing: 1px;
+      font-size: 10.5px;
+      letter-spacing: 0.8px;
+      padding: 8px 6px;
     }
 
     table.monthly-table td {
       font-variant-numeric: tabular-nums;
     }
 
-    .col-date { text-align: left; font-weight: 700; min-width: 72px; }
-    .col-user { text-align: left; font-size: 11px; color: var(--text-muted); max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
-    .col-yellow { background-color: var(--cell-yellow); }
-    .col-gray { background-color: var(--cell-gray); }
-    .col-orange { background-color: var(--cell-orange); }
-    .col-red { background-color: var(--cell-red); color: #FF6B6B; font-weight: 700; }
-    .col-blue { background-color: var(--cell-blue); }
-    .col-green { background-color: var(--cell-green); font-weight: 700; }
+    .col-date { text-align: left; font-weight: 700; min-width: 64px; width: 64px; }
+    .col-user { text-align: left; font-size: 10.5px; color: var(--text-muted); min-width: 90px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
+    .col-yellow { background-color: var(--cell-yellow); min-width: 88px; }
+    .col-gray { background-color: var(--cell-gray); min-width: 80px; }
+    .col-orange { background-color: var(--cell-orange); min-width: 88px; }
+    .col-red { background-color: var(--cell-red); color: #FF6B6B; font-weight: 700; min-width: 88px; }
+    .col-blue { background-color: var(--cell-blue); min-width: 82px; }
+    .col-green { background-color: var(--cell-green); font-weight: 700; min-width: 88px; }
+    .col-action { min-width: 36px; width: 36px; text-align: center; }
 
     .empty-cell {
       color: var(--text-muted);
-      opacity: 0.5;
+      opacity: 0.55;
     }
 
     .totals-row td {
-      background: rgba(15, 23, 42, 0.9) !important;
+      background: #0B1220 !important;
       font-weight: 800;
       border-top: 2px solid var(--primary);
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.35);
     }
 
     .empty-table-msg {
@@ -916,6 +949,7 @@
         <div style="font-size:13px; color:var(--text-muted);" id="month-summary-text"></div>
       </div>
 
+      <div class="scroll-hint">↔ Scroll horizontally to see all columns</div>
       <div class="table-container">
         <table class="monthly-table">
           <thead>
@@ -925,9 +959,9 @@
               <th colspan="4" class="group-header" style="background:#1a2e05; color:#FFE600;">Cash</th>
               <th rowspan="2" class="col-orange">Cierres</th>
               <th rowspan="2" class="col-red">Diferencia</th>
-              <th colspan="3" class="group-header" style="background:#0c2a3a; color:#38BDF8;">MCB Online</th>
-              <th colspan="3" class="group-header" style="background:#0c2a3a; color:#38BDF8;">Vida Nova</th>
-              <th rowspan="2"> </th>
+              <th colspan="3" class="group-header" style="background:#0a2540; color:#38BDF8;">MCB Online</th>
+              <th colspan="3" class="group-header" style="background:#0a2540; color:#38BDF8;">Vida Nova</th>
+              <th rowspan="2" class="col-action"></th>
             </tr>
             <tr>
               <th class="col-yellow">Cash Florin</th>
@@ -976,7 +1010,7 @@
               <th class="col-blue">VN 1</th>
               <th class="col-blue">VN 2</th>
               <th class="col-green">VN Σ</th>
-              <th></th>
+              <th class="col-action"></th>
             </tr>
           </thead>
           <tbody id="admin-entries-body"></tbody>
@@ -1393,7 +1427,7 @@
             <td class="col-blue">${fmtCurrency(data.vidanova1)}</td>
             <td class="col-blue">${fmtCurrency(data.vidanova2)}</td>
             <td class="col-green">${fmtCurrency(data.vidaSum)}</td>
-            <td><button class="btn-icon" title="Delete day entries" onclick="deleteDayEntries('${dateStr}')">🗑</button></td>
+            <td class="col-action"><button class="btn-icon" title="Delete day entries" onclick="deleteDayEntries('${dateStr}')">🗑</button></td>
           </tr>`;
       } else {
         html += `
@@ -1412,7 +1446,7 @@
             <td class="col-blue"><span class="empty-cell">—</span></td>
             <td class="col-blue"><span class="empty-cell">—</span></td>
             <td class="col-green"><span class="empty-cell">—</span></td>
-            <td></td>
+            <td class="col-action"></td>
           </tr>`;
       }
     }
@@ -1433,7 +1467,7 @@
         <td class="col-blue">${fmtCurrency(monthTotals.vidanova1)}</td>
         <td class="col-blue">${fmtCurrency(monthTotals.vidanova2)}</td>
         <td class="col-green">${fmtCurrency(monthTotals.vidaSum)}</td>
-        <td></td>
+        <td class="col-action"></td>
       </tr>`;
 
     tbody.innerHTML = html;
@@ -1464,7 +1498,7 @@
         <td class="col-blue">${fmtCurrency(entry.vidanova1)}</td>
         <td class="col-blue">${fmtCurrency(entry.vidanova2)}</td>
         <td class="col-green">${fmtCurrency(entry.vidaSum)}</td>
-        <td><button class="btn-icon" title="Delete entry" onclick="deleteEntry('${entry.id}')">🗑</button></td>
+        <td class="col-action"><button class="btn-icon" title="Delete entry" onclick="deleteEntry('${entry.id}')">🗑</button></td>
       </tr>
     `).join("");
   }
