@@ -543,6 +543,7 @@
       background: var(--input-bg);
       max-height: 70vh;
       position: relative;
+      /* visible scrollbar on all platforms */
       scrollbar-width: thin;
       scrollbar-color: var(--primary) var(--border-color);
     }
@@ -606,6 +607,7 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* Fixed widths so last columns never collapse */
     .col-date { text-align: left; font-weight: 700; min-width: 64px; width: 64px; }
     .col-user { text-align: left; font-size: 10.5px; color: var(--text-muted); min-width: 90px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
     .col-yellow { background-color: var(--cell-yellow); min-width: 88px; }
@@ -621,6 +623,7 @@
       opacity: 0.55;
     }
 
+    /* Sticky totals row at bottom of the scroll area */
     .totals-row td {
       background: #0B1220 !important;
       font-weight: 800;
@@ -727,6 +730,62 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+ 
+    /* Click-and-hold detail popup */
+    .sum-cell {
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      transition: filter 0.15s;
+    }
+    .sum-cell:hover {
+      filter: brightness(1.25);
+    }
+    .sum-cell:active {
+      filter: brightness(1.4);
+    }
+
+    .detail-popup {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      background: #1E293B;
+      border: 1px solid var(--neon-cyan);
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 12px rgba(0, 240, 255, 0.25);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      pointer-events: none;
+      min-width: 140px;
+    }
+    .detail-popup.visible {
+      display: block;
+    }
+    .detail-popup .popup-title {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--neon-cyan);
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+    .detail-popup .popup-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 3px 0;
+    }
+    .detail-popup .popup-label {
+      color: var(--text-muted);
+    }
+    .detail-popup .popup-value {
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+    }
+
   </style>
 </head>
 <body>
@@ -959,8 +1018,8 @@
               <th colspan="4" class="group-header" style="background:#1a2e05; color:#FFE600;">Cash</th>
               <th rowspan="2" class="col-orange">Cierres</th>
               <th rowspan="2" class="col-red">Diferencia</th>
-              <th colspan="3" class="group-header" style="background:#0a2540; color:#38BDF8;">MCB Online</th>
-              <th colspan="3" class="group-header" style="background:#0a2540; color:#38BDF8;">Vida Nova</th>
+              <th rowspan="2" class="col-green" style="background:#0a2540; color:#38BDF8;" title="Hold to see MCB 1 &amp; MCB 2">MCB Σ</th>
+              <th rowspan="2" class="col-green" style="background:#0a2540; color:#38BDF8;" title="Hold to see VN 1 &amp; VN 2">VN Σ</th>
               <th rowspan="2" class="col-action"></th>
             </tr>
             <tr>
@@ -968,12 +1027,6 @@
               <th class="col-yellow">Cash USD</th>
               <th class="col-gray">Expenses</th>
               <th class="col-yellow">Total</th>
-              <th class="col-blue">MCB 1</th>
-              <th class="col-blue">MCB 2</th>
-              <th class="col-green">MCB Σ</th>
-              <th class="col-blue">VN 1</th>
-              <th class="col-blue">VN 2</th>
-              <th class="col-green">VN Σ</th>
             </tr>
           </thead>
           <tbody id="admin-monthly-body"></tbody>
@@ -985,8 +1038,7 @@
         <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-gray)"></span> Expenses</div>
         <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-orange)"></span> Cierres</div>
         <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-red)"></span> Diferencia</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-blue)"></span> Online</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-green)"></span> Online Sum</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--cell-green)"></span> MCB Σ / VN Σ (hold for details)</div>
       </div>
     </div>
 
@@ -1004,12 +1056,8 @@
               <th class="col-yellow">Total</th>
               <th class="col-orange">Cierres</th>
               <th class="col-red">Diferencia</th>
-              <th class="col-blue">MCB 1</th>
-              <th class="col-blue">MCB 2</th>
-              <th class="col-green">MCB Σ</th>
-              <th class="col-blue">VN 1</th>
-              <th class="col-blue">VN 2</th>
-              <th class="col-green">VN Σ</th>
+              <th class="col-green" title="Hold to see MCB 1 &amp; MCB 2">MCB Σ</th>
+              <th class="col-green" title="Hold to see VN 1 &amp; VN 2">VN Σ</th>
               <th class="col-action"></th>
             </tr>
           </thead>
@@ -1346,7 +1394,7 @@
     const monthVal = monthPicker.value;
 
     if (!monthVal) {
-      tbody.innerHTML = `<tr><td colspan="15" class="empty-table-msg">Select a month</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-table-msg">Select a month</td></tr>`;
       return;
     }
 
@@ -1421,12 +1469,24 @@
             <td class="col-yellow">${fmtCurrency(data.total)}</td>
             <td class="col-orange">${fmtCurrency(data.cierres)}</td>
             <td class="col-red">${fmtCurrency(data.diferencia)}</td>
-            <td class="col-blue">${fmtCurrency(data.mcb1)}</td>
-            <td class="col-blue">${fmtCurrency(data.mcb2)}</td>
-            <td class="col-green">${fmtCurrency(data.mcbSum)}</td>
-            <td class="col-blue">${fmtCurrency(data.vidanova1)}</td>
-            <td class="col-blue">${fmtCurrency(data.vidanova2)}</td>
-            <td class="col-green">${fmtCurrency(data.vidaSum)}</td>
+            <td class="col-green sum-cell"
+                data-type="mcb"
+                data-v1="${Number(data.mcb1).toFixed(2)}"
+                data-v2="${Number(data.mcb2).toFixed(2)}"
+                onmousedown="showDetailPopup(event, this)"
+                onmouseup="hideDetailPopup()"
+                onmouseleave="hideDetailPopup()"
+                ontouchstart="showDetailPopup(event, this)"
+                ontouchend="hideDetailPopup()">${fmtCurrency(data.mcbSum)}</td>
+            <td class="col-green sum-cell"
+                data-type="vn"
+                data-v1="${Number(data.vidanova1).toFixed(2)}"
+                data-v2="${Number(data.vidanova2).toFixed(2)}"
+                onmousedown="showDetailPopup(event, this)"
+                onmouseup="hideDetailPopup()"
+                onmouseleave="hideDetailPopup()"
+                ontouchstart="showDetailPopup(event, this)"
+                ontouchend="hideDetailPopup()">${fmtCurrency(data.vidaSum)}</td>
             <td class="col-action"><button class="btn-icon" title="Delete day entries" onclick="deleteDayEntries('${dateStr}')">🗑</button></td>
           </tr>`;
       } else {
@@ -1440,11 +1500,7 @@
             <td class="col-yellow"><span class="empty-cell">—</span></td>
             <td class="col-orange"><span class="empty-cell">—</span></td>
             <td class="col-red"><span class="empty-cell">—</span></td>
-            <td class="col-blue"><span class="empty-cell">—</span></td>
-            <td class="col-blue"><span class="empty-cell">—</span></td>
             <td class="col-green"><span class="empty-cell">—</span></td>
-            <td class="col-blue"><span class="empty-cell">—</span></td>
-            <td class="col-blue"><span class="empty-cell">—</span></td>
             <td class="col-green"><span class="empty-cell">—</span></td>
             <td class="col-action"></td>
           </tr>`;
@@ -1461,12 +1517,24 @@
         <td class="col-yellow">${fmtCurrency(monthTotals.total)}</td>
         <td class="col-orange">${fmtCurrency(monthTotals.cierres)}</td>
         <td class="col-red">${fmtCurrency(monthTotals.diferencia)}</td>
-        <td class="col-blue">${fmtCurrency(monthTotals.mcb1)}</td>
-        <td class="col-blue">${fmtCurrency(monthTotals.mcb2)}</td>
-        <td class="col-green">${fmtCurrency(monthTotals.mcbSum)}</td>
-        <td class="col-blue">${fmtCurrency(monthTotals.vidanova1)}</td>
-        <td class="col-blue">${fmtCurrency(monthTotals.vidanova2)}</td>
-        <td class="col-green">${fmtCurrency(monthTotals.vidaSum)}</td>
+        <td class="col-green sum-cell"
+            data-type="mcb"
+            data-v1="${Number(monthTotals.mcb1).toFixed(2)}"
+            data-v2="${Number(monthTotals.mcb2).toFixed(2)}"
+            onmousedown="showDetailPopup(event, this)"
+            onmouseup="hideDetailPopup()"
+            onmouseleave="hideDetailPopup()"
+            ontouchstart="showDetailPopup(event, this)"
+            ontouchend="hideDetailPopup()">${fmtCurrency(monthTotals.mcbSum)}</td>
+        <td class="col-green sum-cell"
+            data-type="vn"
+            data-v1="${Number(monthTotals.vidanova1).toFixed(2)}"
+            data-v2="${Number(monthTotals.vidanova2).toFixed(2)}"
+            onmousedown="showDetailPopup(event, this)"
+            onmouseup="hideDetailPopup()"
+            onmouseleave="hideDetailPopup()"
+            ontouchstart="showDetailPopup(event, this)"
+            ontouchend="hideDetailPopup()">${fmtCurrency(monthTotals.vidaSum)}</td>
         <td class="col-action"></td>
       </tr>`;
 
@@ -1478,7 +1546,7 @@
   function renderEntriesTable() {
     const tbody = document.getElementById("admin-entries-body");
     if (!closingEntries || closingEntries.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="15" class="empty-table-msg">No closing data recorded yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-table-msg">No closing data recorded yet.</td></tr>`;
       return;
     }
     const sorted = [...closingEntries].sort((a, b) => b.date.localeCompare(a.date) || (b.user || "").localeCompare(a.user || ""));
@@ -1492,12 +1560,24 @@
         <td class="col-yellow">${fmtCurrency(entry.total)}</td>
         <td class="col-orange">${fmtCurrency(entry.cierres)}</td>
         <td class="col-red">${fmtCurrency(entry.diferencia)}</td>
-        <td class="col-blue">${fmtCurrency(entry.mcb1)}</td>
-        <td class="col-blue">${fmtCurrency(entry.mcb2)}</td>
-        <td class="col-green">${fmtCurrency(entry.mcbSum)}</td>
-        <td class="col-blue">${fmtCurrency(entry.vidanova1)}</td>
-        <td class="col-blue">${fmtCurrency(entry.vidanova2)}</td>
-        <td class="col-green">${fmtCurrency(entry.vidaSum)}</td>
+        <td class="col-green sum-cell"
+            data-type="mcb"
+            data-v1="${Number(entry.mcb1 || 0).toFixed(2)}"
+            data-v2="${Number(entry.mcb2 || 0).toFixed(2)}"
+            onmousedown="showDetailPopup(event, this)"
+            onmouseup="hideDetailPopup()"
+            onmouseleave="hideDetailPopup()"
+            ontouchstart="showDetailPopup(event, this)"
+            ontouchend="hideDetailPopup()">${fmtCurrency(entry.mcbSum)}</td>
+        <td class="col-green sum-cell"
+            data-type="vn"
+            data-v1="${Number(entry.vidanova1 || 0).toFixed(2)}"
+            data-v2="${Number(entry.vidanova2 || 0).toFixed(2)}"
+            onmousedown="showDetailPopup(event, this)"
+            onmouseup="hideDetailPopup()"
+            onmouseleave="hideDetailPopup()"
+            ontouchstart="showDetailPopup(event, this)"
+            ontouchend="hideDetailPopup()">${fmtCurrency(entry.vidaSum)}</td>
         <td class="col-action"><button class="btn-icon" title="Delete entry" onclick="deleteEntry('${entry.id}')">🗑</button></td>
       </tr>
     `).join("");
@@ -1558,6 +1638,43 @@
     }
   }
 
+
+  // ===================== DETAIL POPUP (click-and-hold) =====================
+  function showDetailPopup(event, el) {
+    event.preventDefault();
+    const popup = document.getElementById("detail-popup");
+    const type = el.getAttribute("data-type");
+    const v1 = el.getAttribute("data-v1") || "0.00";
+    const v2 = el.getAttribute("data-v2") || "0.00";
+
+    if (type === "mcb") {
+      document.getElementById("popup-title").textContent = "MCB Breakdown";
+      document.getElementById("popup-label1").textContent = "MCB 1";
+      document.getElementById("popup-label2").textContent = "MCB 2";
+    } else {
+      document.getElementById("popup-title").textContent = "Vida Nova Breakdown";
+      document.getElementById("popup-label1").textContent = "VN 1";
+      document.getElementById("popup-label2").textContent = "VN 2";
+    }
+    document.getElementById("popup-val1").textContent = "XCG " + v1;
+    document.getElementById("popup-val2").textContent = "XCG " + v2;
+
+    const rect = el.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - 70;
+    let top = rect.top - 90;
+    if (top < 8) top = rect.bottom + 8;
+    if (left < 8) left = 8;
+    if (left + 160 > window.innerWidth) left = window.innerWidth - 168;
+
+    popup.style.left = left + "px";
+    popup.style.top = top + "px";
+    popup.classList.add("visible");
+  }
+
+  function hideDetailPopup() {
+    document.getElementById("detail-popup").classList.remove("visible");
+  }
+
   // ===================== HELPERS =====================
   function escapeHtml(text) {
     const div = document.createElement("div");
@@ -1597,6 +1714,14 @@
     document.getElementById(screenId).classList.add("active");
   }
 </script>
+
+
+<!-- Detail popup for MCB / VN breakdown -->
+<div id="detail-popup" class="detail-popup">
+  <div class="popup-title" id="popup-title">Details</div>
+  <div class="popup-row"><span class="popup-label" id="popup-label1">—</span><span class="popup-value" id="popup-val1">—</span></div>
+  <div class="popup-row"><span class="popup-label" id="popup-label2">—</span><span class="popup-value" id="popup-val2">—</span></div>
+</div>
 
 </body>
 </html>
