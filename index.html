@@ -42,7 +42,7 @@
 
     .container {
       width: 100%;
-      max-width: 420px;
+      max-width: 650px; /* Expanded for register table */
     }
 
     .card {
@@ -116,6 +116,13 @@
       margin-bottom: 24px;
     }
 
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
     .input-group {
       margin-bottom: 20px;
     }
@@ -130,29 +137,44 @@
       text-transform: uppercase;
     }
 
-    /* DROPDOWN SELECT STYLES */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* DROPDOWN & INPUT STYLES */
     .select-wrapper {
       position: relative;
     }
 
-    select.user-select {
+    select.user-select, input[type="number"], input[type="text"] {
       width: 100%;
       padding: 14px 16px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--text-main);
       background-color: var(--input-bg);
       border: 1px solid var(--border-color);
       border-radius: 10px;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      cursor: pointer;
       outline: none;
       transition: all 0.2s ease;
     }
 
-    select.user-select:focus, select.user-select:hover {
+    select.user-select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      cursor: pointer;
+    }
+
+    select.user-select:focus, select.user-select:hover, input:focus {
       border-color: var(--neon-cyan);
       box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
     }
@@ -214,6 +236,22 @@
       background: var(--primary-hover);
     }
 
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-logout:hover {
+      color: #F87171;
+      border-color: #F87171;
+    }
+
     .btn-back {
       display: block;
       width: 100%;
@@ -238,6 +276,49 @@
       display: none;
       text-align: center;
       font-weight: 600;
+    }
+
+    /* REGISTER TABLE STYLES */
+    .table-container {
+      margin-top: 24px;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: var(--input-bg);
+      color: var(--accent-text);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .empty-table-msg {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 24px;
+      font-style: italic;
     }
 
     .screen {
@@ -367,13 +448,68 @@
     </form>
   </div>
 
-  <!-- SCREEN 4: DASHBOARD -->
+  <!-- SCREEN 4: DASHBOARD & REGISTER ENTRY FORM -->
   <div id="screen-dashboard" class="card screen">
-    <div class="subtitle">SYSTEM ACTIVE</div>
-    <div class="title" id="welcome-title">Daily Register</div>
-    <p style="margin-bottom: 24px; color: var(--text-muted); font-size: 14px;">Logged in securely. Active session is protected by automatic timeout.</p>
+    <div class="header-bar">
+      <div>
+        <div class="subtitle">ACTIVE REGISTER SESSION</div>
+        <div class="title" id="welcome-title" style="margin-bottom:0;">Daily Register</div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">Log Out</button>
+    </div>
 
-    <button type="button" class="btn-primary" onclick="logout()">Log Out</button>
+    <!-- ENTRY FORM -->
+    <form onsubmit="handleRegisterSubmit(event)">
+      <div class="form-grid">
+        <div class="input-group">
+          <label for="entry-description">Description / Item</label>
+          <input type="text" id="entry-description" placeholder="e.g. Snack bar sales" required autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="entry-payment-type">Payment Method</label>
+          <div class="select-wrapper">
+            <select id="entry-payment-type" class="user-select" required>
+              <option value="Cash">Cash</option>
+              <option value="Card">Card</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="input-group">
+          <label for="entry-amount">Amount (ANG / USD)</label>
+          <input type="number" id="entry-amount" step="0.01" min="0.01" placeholder="0.00" required>
+        </div>
+        <div class="input-group">
+          <label for="entry-notes">Notes (Optional)</label>
+          <input type="text" id="entry-notes" placeholder="Shift details..." autocomplete="off">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary" style="margin-top: 8px;">Add Register Entry</button>
+    </form>
+
+    <!-- ENTRIES TABLE -->
+    <div style="margin-top: 32px;">
+      <div class="subtitle">TODAY'S RECORDED TRANSACTIONS</div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>User</th>
+              <th>Description</th>
+              <th>Type</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="register-table-body">
+            <!-- Dynamically Rendered -->
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -389,6 +525,7 @@
 
 <script>
   let userPins = JSON.parse(localStorage.getItem('registered_user_pins')) || {};
+  let registerEntries = JSON.parse(localStorage.getItem('daily_register_entries')) || [];
   let selectedUser = null;
 
   let inactivityTimer = null;
@@ -448,8 +585,59 @@
   function loginSuccess() {
     document.getElementById('welcome-title').textContent = selectedUser;
     clearInputs();
+    renderTable();
     switchScreen('screen-dashboard');
     startInactivityTracker();
+  }
+
+  function handleRegisterSubmit(event) {
+    event.preventDefault();
+    const desc = document.getElementById('entry-description').value;
+    const type = document.getElementById('entry-payment-type').value;
+    const amount = parseFloat(document.getElementById('entry-amount').value).toFixed(2);
+    const notes = document.getElementById('entry-notes').value;
+
+    const newEntry = {
+      id: Date.now(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      user: selectedUser,
+      description: desc,
+      type: type,
+      amount: amount,
+      notes: notes
+    };
+
+    registerEntries.unshift(newEntry);
+    localStorage.setItem('daily_register_entries', JSON.stringify(registerEntries));
+
+    // Reset Form Fields
+    document.getElementById('entry-description').value = '';
+    document.getElementById('entry-amount').value = '';
+    document.getElementById('entry-notes').value = '';
+
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('register-table-body');
+    tbody.innerHTML = '';
+
+    if (registerEntries.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-table-msg">No transactions recorded yet today.</td></tr>`;
+      return;
+    }
+
+    registerEntries.forEach(entry => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${entry.time}</td>
+        <td><strong>${entry.user}</strong></td>
+        <td>${entry.description} ${entry.notes ? `<small style="color:var(--text-muted);">(${entry.notes})</small>` : ''}</td>
+        <td><span style="color:${entry.type === 'Cash' ? '#10B981' : '#00F0FF'}; font-weight:bold;">${entry.type}</span></td>
+        <td><strong>$${entry.amount}</strong></td>
+      `;
+      tbody.appendChild(row);
+    });
   }
 
   function showUserSelection() {
@@ -531,3 +719,4 @@
 
 </body>
 </html>
+
