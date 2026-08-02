@@ -730,7 +730,7 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
- 
+  
     /* Click-and-hold detail popup */
     .sum-cell {
       cursor: pointer;
@@ -1205,13 +1205,13 @@
 
   function loginSuccess() {
     clearInputs();
-    document.getElementById("entry-date").valueAsDate = new Date();
     document.getElementById("success-message").style.display = "none";
     document.getElementById("overwrite-info").style.display = "none";
     updateLiveCalc();
 
     if (selectedUser === "Inaam Ossais (Admin)") {
       document.getElementById("main-container").classList.add("admin-mode");
+      unlockDateField();
       switchScreen("screen-admin-dashboard");
       switchAdminTab("monthly");
       renderMonthlyTable();
@@ -1219,9 +1219,42 @@
     } else {
       document.getElementById("main-container").classList.remove("admin-mode");
       document.getElementById("user-welcome-title").textContent = selectedUser;
+      lockDateToToday();
       switchScreen("screen-user-dashboard");
       checkExistingEntry();
     }
+  }
+
+  // Lock date to today for regular users
+  function lockDateToToday() {
+    const dateInput = document.getElementById("entry-date");
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    dateInput.value = todayStr;
+    dateInput.min = todayStr;
+    dateInput.max = todayStr;
+    dateInput.readOnly = true;
+    // Prevent calendar from opening on some browsers
+    dateInput.style.pointerEvents = "none";
+    dateInput.style.opacity = "0.85";
+    const hint = dateInput.parentElement.querySelector(".hint");
+    if (hint) hint.textContent = "Date is locked to today. Only today's data can be submitted.";
+  }
+
+  // Unlock date for admin
+  function unlockDateField() {
+    const dateInput = document.getElementById("entry-date");
+    dateInput.min = "";
+    dateInput.max = "";
+    dateInput.readOnly = false;
+    dateInput.style.pointerEvents = "";
+    dateInput.style.opacity = "";
+    dateInput.valueAsDate = new Date();
+    const hint = dateInput.parentElement.querySelector(".hint");
+    if (hint) hint.textContent = "If an entry already exists for this date + user, it will be updated.";
   }
 
   // ===================== LIVE CALC =====================
@@ -1288,6 +1321,11 @@
     if (!firebaseReady || !window.firebaseDb) {
       alert("Cloud is not ready yet. Please wait a moment and try again.");
       return;
+    }
+
+    // Force today for non-admin users
+    if (selectedUser !== "Inaam Ossais (Admin)") {
+      lockDateToToday();
     }
 
     const date = document.getElementById("entry-date").value;
@@ -1366,7 +1404,7 @@
   function switchToAdminSubmit() {
     document.getElementById("main-container").classList.remove("admin-mode");
     document.getElementById("user-welcome-title").textContent = selectedUser + " (Admin)";
-    document.getElementById("entry-date").valueAsDate = new Date();
+    unlockDateField();
     document.getElementById("success-message").style.display = "none";
     document.getElementById("overwrite-info").style.display = "none";
     updateLiveCalc();
